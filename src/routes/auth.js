@@ -1,22 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { protect, restrictTo } = require('../middleware/auth');
-const { validateRegistration, validateLogin, handleValidationErrors } = require('../middleware/validation');
+const { protect } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiter');
 
-router.post('/register', authLimiter, validateRegistration, handleValidationErrors, authController.register);
-router.post('/verify-email', authLimiter, authController.verifyEmail);
-router.post('/resend-verification', authLimiter, authController.resendVerification);
-router.post('/login', authLimiter, validateLogin, handleValidationErrors, authController.login);
+// Public routes (no authentication required)
+router.post('/register', authLimiter, authController.register);
+router.post('/verify-email', authController.verifyEmail);
+router.post('/resend-verification', authLimiter, authController.resendVerificationEmail);
+router.post('/login', authLimiter, authController.login);
 router.post('/forgot-password', authLimiter, authController.forgotPassword);
-router.post('/reset-password', authLimiter, authController.resetPassword);
+router.post('/reset-password', authController.resetPassword);
 
-router.get('/me', protect, authController.getMe);
-router.put('/update-password', protect, authController.updatePassword);
+// Protected routes (require authentication)
+router.use(protect);
 
-router.get('/admins', protect, restrictTo('superadmin'), authController.getAllAdmins);
-router.put('/admins/:id/activate', protect, restrictTo('superadmin'), authController.toggleAdminStatus);
+router.get('/me', authController.getMe);
+router.put('/profile', authController.updateProfile);
+router.put('/change-password', authController.changePassword);
+router.post('/logout', authController.logout);
 
 module.exports = router;
-

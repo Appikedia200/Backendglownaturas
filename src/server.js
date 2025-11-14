@@ -44,9 +44,13 @@ app.use(morgan('combined', {
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'GlowNaturas API - Complete Professional E-Commerce System',
-    version: '3.0.0',
+    message: 'GlowNaturas API - Complete E-Commerce with Full Authentication System',
+    version: '5.0.0',
     features: [
+      'Complete Admin Authentication (Email Verification, Password Reset)',
+      'Self-Registration with Company Email',
+      'Email Verification System',
+      'Password Reset & Recovery',
       'Shopping Cart System',
       'Stock Reservation (Reserve on Order, Deduct on Payment)',
       'PDF Receipt Generation',
@@ -92,10 +96,10 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  logger.info(`GlowNaturas API v3.0 started on port ${PORT}`);
+  logger.info(`GlowNaturas API v5.0 started on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('\n========================================');
-  console.log(`GlowNaturas API v3.0 - Professional E-Commerce`);
+  console.log(`GlowNaturas API v5.0 - Complete Auth System`);
   console.log(`Port: ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`URL: http://localhost:${PORT}`);

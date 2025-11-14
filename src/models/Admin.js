@@ -5,76 +5,130 @@ const crypto = require('crypto');
 const adminSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Name is required'],
-    trim: true,
-    minlength: [2, 'Name must be at least 2 characters'],
-    maxlength: [50, 'Name cannot exceed 50 characters']
+    required: [true, 'Please provide a name'],
+    trim: true
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: [true, 'Please provide an email'],
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
-    validate: {
-      validator: function(email) {
-        return email.endsWith('@glownaturas.com');
-      },
-      message: 'Only @glownaturas.com email addresses are allowed'
-    }
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      'Please provide a valid email'
+    ]
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters'],
+    required: [true, 'Please provide a password'],
+    minlength: 8,
     select: false
   },
-  role: {
-    type: String,
-    enum: ['admin', 'superadmin'],
-    default: 'admin'
-  },
-  isActive: {
+  emailVerified: {
     type: Boolean,
     default: false
   },
-  isEmailVerified: {
-    type: Boolean,
-    default: false
-  },
-  emailVerificationCode: String,
+  emailVerificationToken: String,
   emailVerificationExpires: Date,
-  passwordResetCode: String,
+  passwordResetToken: String,
   passwordResetExpires: Date,
-  lastLogin: Date
-}, { 
-  timestamps: true 
+  lastLogin: Date,
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: Date
+}, {
+  timestamps: true
 });
 
+// Indexes for performance (email index auto-created by unique: true)
+adminSchema.index({ emailVerificationToken: 1 });
+adminSchema.index({ passwordResetToken: 1 });
+
+// Hash password before saving
 adminSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
+  if (!this.isModified('password')) {
+    return next();
+  }
+  
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
+// Compare password method
 adminSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-adminSchema.methods.createEmailVerificationCode = function() {
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-  this.emailVerificationCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
-  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
-  return verificationCode;
+// Check if account is locked
+adminSchema.methods.isLocked = function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
-adminSchema.methods.createPasswordResetCode = function() {
-  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-  this.passwordResetCode = crypto.createHash('sha256').update(resetCode).digest('hex');
+// Increment login attempts
+adminSchema.methods.incLoginAttempts = function() {
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    return this.updateOne({
+      $set: { loginAttempts: 1 },
+      $unset: { lockUntil: 1 }
+    });
+  }
+  
+  const updates = { $inc: { loginAttempts: 1 } };
+  
+  const maxAttempts = 5;
+  const lockTime = 2 * 60 * 60 * 1000; // 2 hours
+  
+  if (this.loginAttempts + 1 >= maxAttempts && !this.isLocked()) {
+    updates.$set = { lockUntil: Date.now() + lockTime };
+  }
+  
+  return this.updateOne(updates);
+};
+
+// Reset login attempts on successful login
+adminSchema.methods.resetLoginAttempts = function() {
+  return this.updateOne({
+    $set: { loginAttempts: 0 },
+    $unset: { lockUntil: 1 }
+  });
+};
+
+// Generate email verification token
+adminSchema.methods.generateEmailVerificationToken = function() {
+  // Generate random token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to emailVerificationToken field
+  this.emailVerificationToken = crypto
+    .createHash('sha256')
+    .update(verificationToken)
+    .digest('hex');
+  
+  // Set token expiration (24 hours)
+  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+  
+  return verificationToken;
+};
+
+// Generate password reset token
+adminSchema.methods.generatePasswordResetToken = function() {
+  // Generate random token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to passwordResetToken field
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  
+  // Set token expiration (1 hour)
   this.passwordResetExpires = Date.now() + 60 * 60 * 1000;
-  return resetCode;
+  
+  return resetToken;
 };
 
 module.exports = mongoose.model('Admin', adminSchema);
-

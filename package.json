@@ -1,7 +1,7 @@
 {
   "name": "glownatura-backend",
-  "version": "3.0.0",
-  "description": "Complete GlowNaturas E-commerce Backend - Professional Enterprise System",
+  "version": "5.0.0",
+  "description": "GlowNaturas E-commerce Backend - Complete Authentication with Email Verification & Password Reset",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

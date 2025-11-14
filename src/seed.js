@@ -228,21 +228,7 @@ const seedData = async () => {
     await Category.findByIdAndUpdate(categories[2]._id, { productCount: 1 });
     await Category.findByIdAndUpdate(categories[3]._id, { productCount: 1 });
     
-    console.log('\n4. Creating superadmin account...');
-    const superadmin = await Admin.create({
-      name: 'Super Admin',
-      email: 'admin@glownaturas.com',
-      password: 'Admin123456',
-      role: 'superadmin',
-      isActive: true,
-      isEmailVerified: true
-    });
-    console.log('Superadmin created:');
-    console.log('  Email: admin@glownaturas.com');
-    console.log('  Password: Admin123456');
-    console.log('  (Change this password after first login!)');
-    
-    console.log('\n5. Seeding email templates...');
+    console.log('\n4. Seeding email templates...');
     const emailTemplates = [];
     for (const [type, template] of Object.entries(defaultEmailTemplates)) {
       const emailTemplate = await EmailTemplate.create({
@@ -265,9 +251,11 @@ const seedData = async () => {
     console.log('\nSummary:');
     console.log(`- ${categories.length} categories created`);
     console.log(`- ${products.length} products created`);
-    console.log('- 1 superadmin account created');
     console.log('- Default settings configured');
     console.log(`- ${emailTemplates.length} email templates seeded`);
+    console.log('\nIMPORTANT: No admin accounts created.');
+    console.log('Admins must register themselves using company email.');
+    console.log('First admin can register at: POST /api/auth/register');
     console.log('\nYou can now start the server with: npm run dev');
     console.log('========================================\n');
     
