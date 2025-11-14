@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const Admin = require('../models/Admin');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
 const { sendTokenResponse } = require('../utils/tokenGenerator');
+const { logLogin } = require('../middleware/auditLog');
+const logger = require('../config/logger');
 
 exports.register = async (req, res, next) => {
   try {
@@ -85,8 +87,12 @@ exports.login = async (req, res, next) => {
     admin.lastLogin = Date.now();
     await admin.save();
     
+    await logLogin(req, admin);
+    logger.info(`Admin logged in: ${admin.email}`);
+    
     sendTokenResponse(admin, 200, res);
   } catch (error) {
+    logger.error(`Login failed: ${error.message}`);
     next(error);
   }
 };

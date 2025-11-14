@@ -1,74 +1,115 @@
 const Media = require('../models/Media');
+const Product = require('../models/Product');
 const cloudinary = require('../config/cloudinary');
-const fs = require('fs').promises;
+const logger = require('../config/logger');
 
+// Helper to generate clean filename
+const generateSlug = (text) => {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+// Upload single or multiple files
 exports.uploadMedia = async (req, res, next) => {
   try {
-    if (!req.file) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'No file uploaded'
+        error: 'No files uploaded'
       });
     }
     
-    const folder = req.body.folder || 'general';
+    const uploadedMedia = [];
     
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: `glownaturas/${folder}`,
-      resource_type: 'auto'
-    });
-    
-    const media = await Media.create({
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      cloudinary: {
-        url: result.url,
-        publicId: result.public_id,
-        secureUrl: result.secure_url,
-        format: result.format,
+    for (const file of req.files) {
+      // Generate clean filename
+      const cleanFilename = generateSlug(file.originalname.split('.')[0]) + '-' + Date.now();
+      
+      // Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: 'glownatura/products',
+        public_id: cleanFilename,
+        transformation: [
+          { width: 1200, height: 1800, crop: 'limit' },
+          { quality: 'auto:good' }
+        ]
+      });
+      
+      // Create media entry
+      const media = await Media.create({
+        filename: cleanFilename,
+        originalName: file.originalname,
+        title: file.originalname.split('.')[0],
+        cloudinaryUrl: result.secure_url,
+        cloudinaryPublicId: result.public_id,
+        cloudinaryFolder: 'glownatura/products',
+        fileSize: file.size,
+        mimeType: file.mimetype,
         width: result.width,
         height: result.height,
-        size: result.bytes
-      },
-      type: result.resource_type === 'video' ? 'video' : 'image',
-      alt: req.body.alt,
-      caption: req.body.caption,
-      folder,
-      tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()) : [],
-      uploadedBy: req.admin.id
-    });
-    
-    await fs.unlink(req.file.path);
+        uploadedBy: req.admin._id
+      });
+      
+      uploadedMedia.push(media);
+      
+      logger.info(`Media uploaded: ${media.filename} by ${req.admin.name}`);
+    }
     
     res.status(201).json({
       success: true,
-      data: media
+      count: uploadedMedia.length,
+      data: uploadedMedia
     });
   } catch (error) {
-    if (req.file) {
-      await fs.unlink(req.file.path).catch(err => console.error('Failed to delete file:', err));
-    }
+    logger.error(`Media upload failed: ${error.message}`);
     next(error);
   }
 };
 
+// Get all media with filtering and pagination
 exports.getAllMedia = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 30;
-    const skip = (page - 1) * limit;
+    const { 
+      search, 
+      tags, 
+      page = 1, 
+      limit = 20,
+      sortBy = '-createdAt',
+      inUse
+    } = req.query;
     
     let query = {};
     
-    if (req.query.type) query.type = req.query.type;
-    if (req.query.folder) query.folder = req.query.folder;
-    if (req.query.tags) query.tags = { $in: req.query.tags.split(',') };
+    // Text search
+    if (search) {
+      query.$text = { $search: search };
+    }
+    
+    // Filter by tags
+    if (tags) {
+      query.tags = { $in: tags.split(',') };
+    }
+    
+    // Filter by usage
+    if (inUse === 'true') {
+      query.usedInProducts = { $exists: true, $ne: [] };
+    } else if (inUse === 'false') {
+      query.$or = [
+        { usedInProducts: { $exists: false } },
+        { usedInProducts: [] }
+      ];
+    }
+    
+    const skip = (page - 1) * limit;
     
     const media = await Media.find(query)
+      .sort(sortBy)
+      .skip(skip)
+      .limit(parseInt(limit))
       .populate('uploadedBy', 'name email')
-      .sort('-createdAt')
-      .limit(limit)
-      .skip(skip);
+      .select('-__v');
     
     const total = await Media.countDocuments(query);
     
@@ -76,18 +117,22 @@ exports.getAllMedia = async (req, res, next) => {
       success: true,
       count: media.length,
       total,
-      page,
+      page: parseInt(page),
       pages: Math.ceil(total / limit),
       data: media
     });
   } catch (error) {
+    logger.error(`Get media failed: ${error.message}`);
     next(error);
   }
 };
 
+// Get single media
 exports.getMedia = async (req, res, next) => {
   try {
-    const media = await Media.findById(req.params.id).populate('uploadedBy', 'name email');
+    const media = await Media.findById(req.params.id)
+      .populate('uploadedBy', 'name email')
+      .populate('usedInProducts', 'name slug');
     
     if (!media) {
       return res.status(404).json({
@@ -101,21 +146,17 @@ exports.getMedia = async (req, res, next) => {
       data: media
     });
   } catch (error) {
+    logger.error(`Get media failed: ${error.message}`);
     next(error);
   }
 };
 
+// Update media metadata
 exports.updateMedia = async (req, res, next) => {
   try {
-    const media = await Media.findByIdAndUpdate(
-      req.params.id,
-      {
-        alt: req.body.alt,
-        caption: req.body.caption,
-        tags: req.body.tags
-      },
-      { new: true, runValidators: true }
-    );
+    const { title, altText, description, tags } = req.body;
+    
+    const media = await Media.findById(req.params.id);
     
     if (!media) {
       return res.status(404).json({
@@ -124,15 +165,26 @@ exports.updateMedia = async (req, res, next) => {
       });
     }
     
+    if (title !== undefined) media.title = title;
+    if (altText !== undefined) media.altText = altText;
+    if (description !== undefined) media.description = description;
+    if (tags !== undefined) media.tags = tags;
+    
+    await media.save();
+    
+    logger.info(`Media updated: ${media.filename} by ${req.admin.name}`);
+    
     res.json({
       success: true,
       data: media
     });
   } catch (error) {
+    logger.error(`Update media failed: ${error.message}`);
     next(error);
   }
 };
 
+// Delete media
 exports.deleteMedia = async (req, res, next) => {
   try {
     const media = await Media.findById(req.params.id);
@@ -144,37 +196,59 @@ exports.deleteMedia = async (req, res, next) => {
       });
     }
     
-    await cloudinary.uploader.destroy(media.cloudinary.publicId);
+    // Check if media is in use
+    if (media.usedInProducts && media.usedInProducts.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete media that is in use by products',
+        usedBy: media.usedInProducts.length
+      });
+    }
+    
+    // Delete from Cloudinary
+    await cloudinary.uploader.destroy(media.cloudinaryPublicId);
+    
+    // Delete from database
     await media.deleteOne();
     
+    logger.info(`Media deleted: ${media.filename} by ${req.admin.name}`);
+    
     res.json({
       success: true,
-      message: 'Media deleted'
+      message: 'Media deleted successfully'
     });
   } catch (error) {
+    logger.error(`Delete media failed: ${error.message}`);
     next(error);
   }
 };
 
-exports.bulkDeleteMedia = async (req, res, next) => {
+// Bulk delete unused media
+exports.bulkDeleteUnused = async (req, res, next) => {
   try {
-    const { mediaIds } = req.body;
+    const unusedMedia = await Media.find({
+      $or: [
+        { usedInProducts: { $exists: false } },
+        { usedInProducts: [] }
+      ]
+    });
     
-    const mediaItems = await Media.find({ _id: { $in: mediaIds } });
+    let deleted = 0;
     
-    const deletePromises = mediaItems.map(media => 
-      cloudinary.uploader.destroy(media.cloudinary.publicId)
-    );
+    for (const media of unusedMedia) {
+      await cloudinary.uploader.destroy(media.cloudinaryPublicId);
+      await media.deleteOne();
+      deleted++;
+    }
     
-    await Promise.all(deletePromises);
-    await Media.deleteMany({ _id: { $in: mediaIds } });
+    logger.info(`Bulk deleted ${deleted} unused media by ${req.admin.name}`);
     
     res.json({
       success: true,
-      message: `${mediaIds.length} media items deleted`
+      message: `${deleted} unused media files deleted`
     });
   } catch (error) {
+    logger.error(`Bulk delete failed: ${error.message}`);
     next(error);
   }
 };
-

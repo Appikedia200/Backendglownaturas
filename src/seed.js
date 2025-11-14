@@ -4,6 +4,8 @@ const Admin = require('./models/Admin');
 const Category = require('./models/Category');
 const Product = require('./models/Product');
 const Settings = require('./models/Settings');
+const EmailTemplate = require('./models/EmailTemplate');
+const defaultEmailTemplates = require('./utils/defaultEmailTemplates');
 
 const connectDB = async () => {
   try {
@@ -25,6 +27,7 @@ const seedData = async () => {
     await Category.deleteMany({});
     await Product.deleteMany({});
     await Settings.deleteMany({});
+    await EmailTemplate.deleteMany({});
     
     console.log('1. Creating default settings...');
     const settings = await Settings.create({
@@ -239,6 +242,23 @@ const seedData = async () => {
     console.log('  Password: Admin123456');
     console.log('  (Change this password after first login!)');
     
+    console.log('\n5. Seeding email templates...');
+    const emailTemplates = [];
+    for (const [type, template] of Object.entries(defaultEmailTemplates)) {
+      const emailTemplate = await EmailTemplate.create({
+        templateType: type,
+        name: template.name,
+        subject: template.subject,
+        htmlContent: template.htmlContent,
+        textContent: template.textContent,
+        variables: template.variables,
+        isActive: true,
+        isDefault: true
+      });
+      emailTemplates.push(emailTemplate);
+    }
+    console.log(`${emailTemplates.length} email templates created`);
+    
     console.log('\n========================================');
     console.log('Database seeding completed successfully!');
     console.log('========================================');
@@ -247,6 +267,7 @@ const seedData = async () => {
     console.log(`- ${products.length} products created`);
     console.log('- 1 superadmin account created');
     console.log('- Default settings configured');
+    console.log(`- ${emailTemplates.length} email templates seeded`);
     console.log('\nYou can now start the server with: npm run dev');
     console.log('========================================\n');
     
@@ -258,4 +279,5 @@ const seedData = async () => {
 };
 
 seedData();
+
 

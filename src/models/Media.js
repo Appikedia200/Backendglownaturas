@@ -5,45 +5,70 @@ const mediaSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  originalName: String,
-  cloudinary: {
-    url: {
-      type: String,
-      required: true
-    },
-    publicId: {
-      type: String,
-      required: true
-    },
-    secureUrl: String,
-    format: String,
-    width: Number,
-    height: Number,
-    size: Number
-  },
-  type: {
+  originalName: {
     type: String,
-    enum: ['image', 'video', 'document'],
-    default: 'image'
+    required: true
   },
-  alt: String,
-  caption: String,
-  folder: {
+  title: {
     type: String,
-    default: 'general'
+    default: ''
   },
-  tags: [String],
-  usedIn: [{
-    model: String,
-    modelId: mongoose.Schema.Types.ObjectId
+  altText: {
+    type: String,
+    default: ''
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  cloudinaryUrl: {
+    type: String,
+    required: true
+  },
+  cloudinaryPublicId: {
+    type: String,
+    required: true
+  },
+  cloudinaryFolder: {
+    type: String,
+    default: 'products'
+  },
+  fileSize: {
+    type: Number,
+    required: true
+  },
+  mimeType: {
+    type: String,
+    required: true
+  },
+  width: {
+    type: Number
+  },
+  height: {
+    type: Number
+  },
+  tags: [{
+    type: String,
+    lowercase: true,
+    trim: true
+  }],
+  usedInProducts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
   }],
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Admin'
+    ref: 'Admin',
+    required: true
   }
 }, {
   timestamps: true
 });
 
-module.exports = mongoose.model('Media', mediaSchema);
+// Indexes for efficient querying
+mediaSchema.index({ filename: 1 });
+mediaSchema.index({ title: 'text', altText: 'text', tags: 'text' });
+mediaSchema.index({ usedInProducts: 1 });
+mediaSchema.index({ uploadedBy: 1 });
 
+module.exports = mongoose.model('Media', mediaSchema);

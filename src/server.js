@@ -5,6 +5,10 @@ const morgan = require('morgan');
 const connectDatabase = require('./config/database');
 const corsMiddleware = require('./middleware/cors');
 const errorHandler = require('./middleware/errorHandler');
+const { sanitizeData } = require('./middleware/sanitize');
+const { generalLimiter } = require('./middleware/rateLimiter');
+const logger = require('./config/logger');
+const scheduleExpiredOrdersJob = require('./jobs/expiredOrders');
 
 const authRoutes = require('./routes/auth');
 const productsRoutes = require('./routes/products');
@@ -14,22 +18,49 @@ const reviewsRoutes = require('./routes/reviews');
 const ordersRoutes = require('./routes/orders');
 const dashboardRoutes = require('./routes/dashboard');
 const settingsRoutes = require('./routes/settings');
+const cartRoutes = require('./routes/cart');
+const emailTemplatesRoutes = require('./routes/emailTemplates');
 
 const app = express();
 
 connectDatabase();
 
+scheduleExpiredOrdersJob();
+
 app.use(helmet());
 app.use(corsMiddleware);
+app.use(sanitizeData);
+app.use(generalLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
+
+app.use(morgan('combined', {
+  stream: {
+    write: (message) => logger.http(message.trim())
+  }
+}));
 
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'GlowNaturas API - Complete Production System',
-    version: '1.0.0',
+    message: 'GlowNaturas API - Complete Professional E-Commerce System',
+    version: '3.0.0',
+    features: [
+      'Shopping Cart System',
+      'Stock Reservation (Reserve on Order, Deduct on Payment)',
+      'PDF Receipt Generation',
+      'Order Expiry Automation (6 hours)',
+      'Rate Limiting (Security)',
+      'Input Sanitization (XSS & NoSQL Injection Prevention)',
+      'Professional Logging System',
+      'Admin Audit Trail',
+      'Dynamic Email Template Management',
+      'Complete Media Library',
+      'Advanced Order Management (Refunds, Notes, Export)',
+      'Multi-Delivery Method Support (Courier, Local, Pickup)',
+      'Professional Email Templates (No Emojis)'
+    ],
     endpoints: {
       auth: '/api/auth',
       products: '/api/products',
@@ -37,8 +68,10 @@ app.get('/', (req, res) => {
       media: '/api/media',
       reviews: '/api/reviews',
       orders: '/api/orders',
+      cart: '/api/cart',
       dashboard: '/api/dashboard',
-      settings: '/api/settings'
+      settings: '/api/settings',
+      emailTemplates: '/api/email-templates'
     }
   });
 });
@@ -49,16 +82,20 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/orders', ordersRoutes);
+app.use('/api/cart', cartRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/email-templates', emailTemplatesRoutes);
 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
+  logger.info(`GlowNaturas API v3.0 started on port ${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('\n========================================');
-  console.log(`GlowNaturas API - Production Ready`);
+  console.log(`GlowNaturas API v3.0 - Professional E-Commerce`);
   console.log(`Port: ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`URL: http://localhost:${PORT}`);
@@ -66,7 +103,13 @@ app.listen(PORT, () => {
 });
 
 process.on('unhandledRejection', (err) => {
-  console.log(`Error: ${err.message}`);
+  logger.error(`Unhandled Rejection: ${err.message}`);
+  console.error(`Error: ${err.message}`);
   process.exit(1);
 });
 
+process.on('uncaughtException', (err) => {
+  logger.error(`Uncaught Exception: ${err.message}`);
+  console.error(`Error: ${err.message}`);
+  process.exit(1);
+});

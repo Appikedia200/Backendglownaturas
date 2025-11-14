@@ -1,4 +1,7 @@
 const transporter = require('../config/email');
+const EmailTemplate = require('../models/EmailTemplate');
+const Settings = require('../models/Settings');
+const path = require('path');
 
 exports.sendEmail = async (options) => {
   const mailOptions = {
@@ -171,5 +174,115 @@ exports.sendOrderStatusEmail = async (order, status, settings) => {
     subject,
     html
   });
+};
+
+exports.sendOrderEmail = async (order, templateType, pdfPath = null) => {
+  try {
+    // Get template from database
+    const template = await EmailTemplate.findOne({ templateType });
+    
+    if (!template || !template.isActive) {
+      console.log(`Template ${templateType} not found or inactive`);
+      return;
+    }
+    
+    // Get settings for bank details, WhatsApp, etc.
+    const settings = await Settings.findOne();
+    
+    // Build items table for HTML
+    const itemsTableHtml = `
+      <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse: collapse; margin-bottom: 16px;">
+        <thead>
+          <tr style="background-color: #f9fafb;">
+            <th style="border: 1px solid #e5e7eb; text-align: left; padding: 12px; color: #6b7280; font-size: 14px;">Product</th>
+            <th style="border: 1px solid #e5e7eb; text-align: center; padding: 12px; color: #6b7280; font-size: 14px;">Qty</th>
+            <th style="border: 1px solid #e5e7eb; text-align: right; padding: 12px; color: #6b7280; font-size: 14px;">Price</th>
+            <th style="border: 1px solid #e5e7eb; text-align: right; padding: 12px; color: #6b7280; font-size: 14px;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${order.items.map(item => `
+            <tr>
+              <td style="border: 1px solid #e5e7eb; padding: 12px; color: #1f2937; font-size: 14px;">${item.productName}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 12px; text-align: center; color: #1f2937; font-size: 14px;">${item.quantity}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 12px; text-align: right; color: #1f2937; font-size: 14px;">₦${item.price.toLocaleString()}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 12px; text-align: right; color: #1f2937; font-size: 14px; font-weight: 600;">₦${item.subtotal.toLocaleString()}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    
+    // Build items list for plain text
+    const itemsText = order.items.map(item => 
+      `• ${item.productName} x ${item.quantity} - ₦${item.subtotal.toLocaleString()}`
+    ).join('\n');
+    
+    // Build variable replacements
+    const variables = {
+      CUSTOMER_NAME: order.customer.name,
+      ORDER_ID: order.orderId,
+      ORDER_DATE: order.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      TOTAL: `₦${order.total.toLocaleString()}`,
+      SUBTOTAL: `₦${order.subtotal.toLocaleString()}`,
+      SHIPPING: `₦${order.shippingFee.toLocaleString()}`,
+      ITEMS_TABLE: itemsTableHtml,
+      ITEMS_TEXT: itemsText,
+      BANK_NAME: process.env.BANK_NAME || 'First Bank Nigeria',
+      ACCOUNT_NUMBER: process.env.ACCOUNT_NUMBER || '1234567890',
+      SHIPPING_ADDRESS: order.customer.address,
+      CITY: order.customer.city,
+      STATE: order.customer.state,
+      WHATSAPP_NUMBER: settings?.whatsapp?.number || process.env.WHATSAPP_NUMBER || '+2348012345678',
+      STORE_EMAIL: settings?.storeInfo?.email || process.env.STORE_EMAIL || 'orders@glownatura.com',
+      STORE_URL: process.env.FRONTEND_URL || 'https://glownatura.com',
+      CARRIER: order.shipping?.carrier || 'N/A',
+      TRACKING_NUMBER: order.shipping?.trackingNumber || 'N/A',
+      TRACKING_URL: order.shipping?.trackingUrl || '#',
+      ESTIMATED_DELIVERY: order.shipping?.estimatedDelivery ? new Date(order.shipping.estimatedDelivery).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD',
+      DELIVERY_CONTACT: order.shipping?.riderContact || 'N/A',
+      CUSTOM_MESSAGE: order.shipping?.customMessage || 'Our delivery agent will contact you before arrival.',
+      PICKUP_ADDRESS: settings?.storeInfo?.address || '45 Allen Avenue, Ikeja, Lagos',
+      PICKUP_CONTACT: settings?.whatsapp?.number || process.env.WHATSAPP_NUMBER || '+2348012345678',
+      PICKUP_DEADLINE: order.shipping?.estimatedDelivery ? new Date(order.shipping.estimatedDelivery).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Within 7 days',
+      DELIVERY_DATE: order.shipping?.deliveredAt ? new Date(order.shipping.deliveredAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      CANCEL_DATE: order.cancelledAt ? new Date(order.cancelledAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      CANCEL_REASON: order.cancelReason || 'Order cancelled',
+      REFUND_MESSAGE: order.paymentStatus === 'paid' ? 'If payment was made, your refund will be processed within 5-7 business days.' : 'No payment was received, so no refund is necessary.'
+    };
+    
+    // Replace variables in HTML content
+    let emailHtml = template.htmlContent;
+    let emailSubject = template.subject;
+    
+    Object.keys(variables).forEach(key => {
+      const regex = new RegExp(`{${key}}`, 'g');
+      emailHtml = emailHtml.replace(regex, variables[key]);
+      emailSubject = emailSubject.replace(regex, variables[key]);
+    });
+    
+    // Prepare mail options
+    const mailOptions = {
+      to: order.customer.email,
+      subject: emailSubject,
+      html: emailHtml
+    };
+    
+    // Attach PDF if provided
+    if (pdfPath) {
+      mailOptions.attachments = [{
+        filename: `Receipt-${order.orderId}.pdf`,
+        path: pdfPath
+      }];
+    }
+    
+    // Send email
+    await this.sendEmail(mailOptions);
+    
+    console.log(`Order email sent: ${templateType} to ${order.customer.email}`);
+  } catch (error) {
+    console.error(`Failed to send order email: ${error.message}`);
+    // Don't throw error - email failure shouldn't block order processing
+  }
 };
 

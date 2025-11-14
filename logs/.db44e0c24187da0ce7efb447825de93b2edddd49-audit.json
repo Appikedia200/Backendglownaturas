@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\.db44e0c24187da0ce7efb447825de93b2edddd49-audit.json",
+    "files": [
+        {
+            "date": 1763083146309,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-13.log",
+            "hash": "177c5847f8d30fc6a8bfc271be83e6aaa0777c907b88f10c1d002d3d1e4e4163"
+        },
+        {
+            "date": 1763111987355,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-14.log",
+            "hash": "9058b602ae5e2f417cb45aa5185bb09b9a7b17866ab17175caf1eb46fd7888ed"
+        }
+    ],
+    "hashType": "sha256"
+}

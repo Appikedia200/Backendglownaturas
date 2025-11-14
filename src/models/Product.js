@@ -54,6 +54,11 @@ const productSchema = new mongoose.Schema({
     min: [0, 'Stock cannot be negative'],
     default: 0
   },
+  reservedStock: {
+    type: Number,
+    default: 0,
+    min: [0, 'Reserved stock cannot be negative']
+  },
   sku: {
     type: String,
     unique: true,
@@ -163,6 +168,35 @@ productSchema.virtual('reviews', {
   localField: '_id',
   foreignField: 'product'
 });
+
+productSchema.virtual('availableStock').get(function() {
+  return this.stock - this.reservedStock;
+});
+
+productSchema.methods.reserveStock = async function(quantity) {
+  if (this.availableStock < quantity) {
+    throw new Error(`Insufficient stock available for ${this.name}. Available: ${this.availableStock}, Requested: ${quantity}`);
+  }
+  this.reservedStock += quantity;
+  await this.save();
+  return this;
+};
+
+productSchema.methods.releaseStock = async function(quantity) {
+  this.reservedStock = Math.max(0, this.reservedStock - quantity);
+  await this.save();
+  return this;
+};
+
+productSchema.methods.confirmStockDeduction = async function(quantity) {
+  if (this.reservedStock < quantity) {
+    throw new Error(`Cannot confirm stock deduction. Reserved: ${this.reservedStock}, Requested: ${quantity}`);
+  }
+  this.stock -= quantity;
+  this.reservedStock -= quantity;
+  await this.save();
+  return this;
+};
 
 productSchema.index({ name: 'text', description: 'text', keywords: 'text' });
 productSchema.index({ category: 1, status: 1 });
