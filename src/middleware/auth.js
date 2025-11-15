@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
+const logger = require('../config/logger');
 
 exports.protect = async (req, res, next) => {
   try {
@@ -13,7 +14,8 @@ exports.protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        error: 'Not authorized. Please login.'
+        error: 'Not authorized. Please login.',
+        errorCode: 'NO_TOKEN'
       });
     }
     
@@ -26,7 +28,17 @@ exports.protect = async (req, res, next) => {
     if (!admin) {
       return res.status(401).json({
         success: false,
-        error: 'Admin not found. Please login again.'
+        error: 'Admin account not found. Please login again.',
+        errorCode: 'ADMIN_NOT_FOUND'
+      });
+    }
+    
+    // Check if email is still verified
+    if (!admin.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        error: 'Email not verified. Please verify your email address.',
+        errorCode: 'EMAIL_NOT_VERIFIED'
       });
     }
     
@@ -34,9 +46,44 @@ exports.protect = async (req, res, next) => {
     req.admin = admin;
     next();
   } catch (error) {
+    // ENHANCED: Specific error handling based on error type
+    
+    // Token expired
+    if (error.name === 'TokenExpiredError') {
+      logger.warn(`Token expired for request to ${req.originalUrl}`);
+      return res.status(401).json({
+        success: false,
+        error: 'Your session has expired. Please login again.',
+        errorCode: 'TOKEN_EXPIRED'
+      });
+    }
+    
+    // Token malformed or signature invalid
+    if (error.name === 'JsonWebTokenError') {
+      logger.warn(`Invalid token for request to ${req.originalUrl}: ${error.message}`);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid authentication token. Please login again.',
+        errorCode: 'TOKEN_INVALID'
+      });
+    }
+    
+    // Token not yet valid (nbf claim)
+    if (error.name === 'NotBeforeError') {
+      logger.warn(`Token not yet active for request to ${req.originalUrl}`);
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication token not yet valid.',
+        errorCode: 'TOKEN_NOT_ACTIVE'
+      });
+    }
+    
+    // Generic fallback for unexpected errors
+    logger.error(`Authentication error for ${req.originalUrl}: ${error.message}`);
     return res.status(401).json({
       success: false,
-      error: 'Not authorized. Invalid token.'
+      error: 'Authentication failed. Please login again.',
+      errorCode: 'AUTH_FAILED'
     });
   }
 };

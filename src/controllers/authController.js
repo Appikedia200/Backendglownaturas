@@ -1,130 +1,83 @@
-const Admin = require('../models/Admin');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+/**
+ * Authentication Controllers
+ * HTTP request/response handlers for authentication endpoints
+ * Single Responsibility: HTTP handling only
+ * 
+ * This controller contains NO business logic
+ * All business logic is delegated to authService
+ * 
+ * @module controllers/authController
+ * @version 5.1.0
+ */
+
+const authService = require('../services/authService');
+const { validateEmail, validatePassword, validateName } = require('../validators/authValidator');
+const { generateToken } = require('../utils/jwtHelper');
 const logger = require('../config/logger');
-const { sendEmail } = require('../utils/emailService');
 
-// Generate JWT token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
-  });
-};
-
-// 1. Register admin
+/**
+ * Register new admin
+ * POST /api/auth/register
+ */
 exports.register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
     
-    // Validate input
-    if (!name || !email || !password) {
+    // Input validation
+    const nameCheck = validateName(name);
+    if (!nameCheck.isValid) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide name, email, and password'
+        error: nameCheck.error
       });
     }
     
-    // Validate company email domain
-    const companyDomain = process.env.COMPANY_EMAIL_DOMAIN || 'glownatura.com';
-    if (!email.endsWith(`@${companyDomain}`)) {
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.isValid) {
       return res.status(400).json({
         success: false,
-        error: `Please use your company email address (@${companyDomain})`
+        error: emailCheck.error
       });
     }
     
-    // Validate password strength
-    if (password.length < 8) {
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.isValid) {
       return res.status(400).json({
         success: false,
-        error: 'Password must be at least 8 characters long'
+        error: passwordCheck.error
       });
     }
     
-    // Create admin with emailVerified: false
-    const admin = await Admin.create({
-      name,
+    // Delegate to service
+    const result = await authService.registerAdmin({
+      name: nameCheck.value,
       email,
-      password,
-      emailVerified: false
+      password
     });
-    
-    // Generate email verification token
-    const verificationToken = admin.generateEmailVerificationToken();
-    await admin.save({ validateBeforeSave: false });
-    
-    // Create verification URL
-    const verificationUrl = `${process.env.ADMIN_URL}/verify-email?token=${verificationToken}`;
-    
-    // Send verification email
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
-          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-          .button { display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-          .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px; color: #6b7280; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>GlowNatura Admin Portal</h1>
-          </div>
-          <div class="content">
-            <h2>Verify Your Email Address</h2>
-            <p>Hi ${admin.name},</p>
-            <p>Thank you for registering as an admin for GlowNatura. To complete your registration, please verify your email address by clicking the button below:</p>
-            <div style="text-align: center;">
-              <a href="${verificationUrl}" class="button">Verify Email Address</a>
-            </div>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #059669;">${verificationUrl}</p>
-            <p><strong>This link will expire in 24 hours.</strong></p>
-            <p>If you didn't create this account, please ignore this email.</p>
-          </div>
-          <div class="footer">
-            <p>&copy; 2025 GlowNatura. All rights reserved.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    await sendEmail({
-      to: admin.email,
-      subject: 'Verify Your GlowNatura Admin Account',
-      html: emailHtml
-    });
-    
-    logger.info(`Admin registered: ${admin.email} - verification email sent`);
     
     res.status(201).json({
       success: true,
       message: 'Registration successful! Please check your email to verify your account.',
-      data: {
-        email: admin.email,
-        emailVerified: false
-      }
+      data: result
     });
   } catch (error) {
+    // Handle duplicate email error
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
         error: 'An account with this email already exists'
       });
     }
-    logger.error(`Admin registration failed: ${error.message}`);
+    
+    logger.error(`Registration failed: ${error.message}`);
     next(error);
   }
 };
 
-// 2. Verify email
+/**
+ * Verify email address
+ * POST /api/auth/verify-email
+ */
 exports.verifyEmail = async (req, res, next) => {
   try {
     const { token } = req.body;
@@ -132,58 +85,35 @@ exports.verifyEmail = async (req, res, next) => {
     if (!token) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide verification token'
+        error: 'Verification token is required'
       });
     }
     
-    // Hash token to compare with database
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
+    // Delegate to service
+    const adminData = await authService.verifyEmail(token);
     
-    // Find admin with valid token
-    const admin = await Admin.findOne({
-      emailVerificationToken: hashedToken,
-      emailVerificationExpires: { $gt: Date.now() }
-    });
-    
-    if (!admin) {
-      return res.status(400).json({
-        success: false,
-        error: 'Verification token is invalid or has expired'
-      });
-    }
-    
-    // Set email as verified
-    admin.emailVerified = true;
-    admin.emailVerificationToken = undefined;
-    admin.emailVerificationExpires = undefined;
-    await admin.save();
-    
-    // Generate JWT token for immediate login
-    const jwtToken = generateToken(admin._id);
-    
-    logger.info(`Email verified: ${admin.email}`);
+    // Generate auth token
+    const authToken = generateToken(adminData._id);
     
     res.json({
       success: true,
       message: 'Email verified successfully! You can now login.',
-      data: {
-        _id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        emailVerified: true
-      },
-      token: jwtToken
+      data: adminData,
+      token: authToken
     });
   } catch (error) {
     logger.error(`Email verification failed: ${error.message}`);
-    next(error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
-// 3. Resend verification email
+/**
+ * Resend verification email
+ * POST /api/auth/resend-verification
+ */
 exports.resendVerificationEmail = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -195,81 +125,13 @@ exports.resendVerificationEmail = async (req, res, next) => {
       });
     }
     
-    // Find admin
-    const admin = await Admin.findOne({ email });
+    // Delegate to service
+    await authService.resendVerificationEmail(email);
     
-    if (!admin) {
-      return res.status(404).json({
-        success: false,
-        error: 'Admin not found'
-      });
-    }
-    
-    // Check if already verified
-    if (admin.emailVerified) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email is already verified'
-      });
-    }
-    
-    // Generate new verification token
-    const verificationToken = admin.generateEmailVerificationToken();
-    await admin.save({ validateBeforeSave: false });
-    
-    // Create verification URL
-    const verificationUrl = `${process.env.ADMIN_URL}/verify-email?token=${verificationToken}`;
-    
-    // Send verification email
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
-          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-          .button { display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-          .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px; color: #6b7280; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>GlowNatura Admin Portal</h1>
-          </div>
-          <div class="content">
-            <h2>Verify Your Email Address</h2>
-            <p>Hi ${admin.name},</p>
-            <p>Here's your new verification link. Please click the button below to verify your email address:</p>
-            <div style="text-align: center;">
-              <a href="${verificationUrl}" class="button">Verify Email Address</a>
-            </div>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #059669;">${verificationUrl}</p>
-            <p><strong>This link will expire in 24 hours.</strong></p>
-          </div>
-          <div class="footer">
-            <p>&copy; 2025 GlowNatura. All rights reserved.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    await sendEmail({
-      to: admin.email,
-      subject: 'Verify Your GlowNatura Admin Account',
-      html: emailHtml
-    });
-    
-    logger.info(`Verification email resent: ${admin.email}`);
-    
+    // Generic message (security - prevent email enumeration)
     res.json({
       success: true,
-      message: 'Verification email sent! Please check your inbox.'
+      message: 'If an account exists with this email and is unverified, you will receive a verification email.'
     });
   } catch (error) {
     logger.error(`Resend verification failed: ${error.message}`);
@@ -277,12 +139,14 @@ exports.resendVerificationEmail = async (req, res, next) => {
   }
 };
 
-// 4. Login
+/**
+ * Admin login
+ * POST /api/auth/login
+ */
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     
-    // Validate input
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -290,75 +154,41 @@ exports.login = async (req, res, next) => {
       });
     }
     
-    // Get admin with password
-    const admin = await Admin.findOne({ email }).select('+password');
+    // Delegate to service
+    const adminData = await authService.loginAdmin(email, password);
     
-    if (!admin) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
-    }
-    
-    // Check if email is verified
-    if (!admin.emailVerified) {
-      return res.status(401).json({
-        success: false,
-        error: 'Please verify your email before logging in. Check your inbox for the verification link.'
-      });
-    }
-    
-    // Check if account is locked
-    if (admin.isLocked()) {
-      return res.status(423).json({
-        success: false,
-        error: 'Account is temporarily locked due to too many failed login attempts. Please try again later or reset your password.'
-      });
-    }
-    
-    // Check password
-    const isPasswordCorrect = await admin.comparePassword(password);
-    
-    if (!isPasswordCorrect) {
-      await admin.incLoginAttempts();
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
-    }
-    
-    // Reset login attempts on successful login
-    if (admin.loginAttempts > 0 || admin.lockUntil) {
-      await admin.resetLoginAttempts();
-    }
-    
-    // Update last login
-    admin.lastLogin = Date.now();
-    await admin.save();
-    
-    // Generate token
-    const token = generateToken(admin._id);
-    
-    logger.info(`Admin login: ${admin.email}`);
+    // Generate auth token
+    const token = generateToken(adminData._id);
     
     res.json({
       success: true,
-      data: {
-        _id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        emailVerified: admin.emailVerified,
-        lastLogin: admin.lastLogin
-      },
+      data: adminData,
       token
     });
   } catch (error) {
     logger.error(`Login failed: ${error.message}`);
-    next(error);
+    
+    // Handle specific error codes
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: error.message,
+        errorCode: error.code
+      });
+    }
+    
+    // Generic authentication failure
+    res.status(401).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
-// 5. Forgot password
+/**
+ * Request password reset
+ * POST /api/auth/forgot-password
+ */
 exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -366,113 +196,31 @@ exports.forgotPassword = async (req, res, next) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide email address'
+        error: 'Please provide your email address'
       });
     }
     
-    // Find admin (don't reveal if exists for security)
-    const admin = await Admin.findOne({ email });
+    // Delegate to service
+    await authService.requestPasswordReset(email);
     
-    // Always return success message (don't reveal if email exists)
-    const successMessage = 'If an account exists with this email, you will receive password reset instructions.';
-    
-    if (!admin) {
-      // Log attempt for security monitoring
-      logger.warn(`Password reset attempted for non-existent email: ${email}`);
-      return res.json({
-        success: true,
-        message: successMessage
-      });
-    }
-    
-    // Generate password reset token
-    const resetToken = admin.generatePasswordResetToken();
-    await admin.save({ validateBeforeSave: false });
-    
-    // Create reset URL
-    const resetUrl = `${process.env.ADMIN_URL}/reset-password?token=${resetToken}`;
-    
-    // Send password reset email
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
-          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-          .button { display: inline-block; background-color: #dc2626; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-          .warning { background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0; border-radius: 4px; }
-          .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px; color: #6b7280; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Password Reset Request</h1>
-          </div>
-          <div class="content">
-            <h2>Reset Your Password</h2>
-            <p>Hi ${admin.name},</p>
-            <p>We received a request to reset your password for your GlowNatura admin account.</p>
-            <p>Click the button below to reset your password:</p>
-            <div style="text-align: center;">
-              <a href="${resetUrl}" class="button">Reset Password</a>
-            </div>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #dc2626;">${resetUrl}</p>
-            <div class="warning">
-              <p style="margin: 0;"><strong>Important:</strong></p>
-              <ul style="margin: 8px 0;">
-                <li>This link will expire in 1 hour</li>
-                <li>If you didn't request this, please ignore this email</li>
-                <li>Your password won't change unless you click the link and set a new one</li>
-              </ul>
-            </div>
-          </div>
-          <div class="footer">
-            <p>&copy; 2025 GlowNatura. All rights reserved.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    try {
-      await sendEmail({
-        to: admin.email,
-        subject: 'Password Reset Request - GlowNatura Admin',
-        html: emailHtml
-      });
-      
-      logger.info(`Password reset email sent: ${admin.email}`);
-    } catch (emailError) {
-      // Clear reset token if email fails
-      admin.passwordResetToken = undefined;
-      admin.passwordResetExpires = undefined;
-      await admin.save({ validateBeforeSave: false });
-      
-      logger.error(`Password reset email failed: ${emailError.message}`);
-      
-      return res.status(500).json({
-        success: false,
-        error: 'Email could not be sent. Please try again later.'
-      });
-    }
-    
+    // Generic message (security - prevent email enumeration)
     res.json({
       success: true,
-      message: successMessage
+      message: 'If an account exists with that email, a password reset link has been sent.'
     });
   } catch (error) {
     logger.error(`Forgot password failed: ${error.message}`);
-    next(error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
-// 6. Reset password
+/**
+ * Reset password with token
+ * POST /api/auth/reset-password
+ */
 exports.resetPassword = async (req, res, next) => {
   try {
     const { token, newPassword } = req.body;
@@ -484,64 +232,49 @@ exports.resetPassword = async (req, res, next) => {
       });
     }
     
-    // Validate new password strength
-    if (newPassword.length < 8) {
+    // Validate new password
+    const passwordCheck = validatePassword(newPassword);
+    if (!passwordCheck.isValid) {
       return res.status(400).json({
         success: false,
-        error: 'New password must be at least 8 characters long'
+        error: passwordCheck.error
       });
     }
     
-    // Hash token to compare with database
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-    
-    // Find admin with valid token
-    const admin = await Admin.findOne({
-      passwordResetToken: hashedToken,
-      passwordResetExpires: { $gt: Date.now() }
-    }).select('+password');
-    
-    if (!admin) {
-      return res.status(400).json({
-        success: false,
-        error: 'Password reset token is invalid or has expired'
-      });
-    }
-    
-    // Update password
-    admin.password = newPassword;
-    admin.passwordResetToken = undefined;
-    admin.passwordResetExpires = undefined;
-    
-    // Reset login attempts and unlock account if locked
-    admin.loginAttempts = 0;
-    admin.lockUntil = undefined;
-    
-    await admin.save();
-    
-    logger.info(`Password reset successful: ${admin.email}`);
+    // Delegate to service
+    await authService.resetPassword(token, newPassword);
     
     res.json({
       success: true,
-      message: 'Password reset successful! You can now login with your new password.'
+      message: 'Password reset successfully! You can now login with your new password.'
     });
   } catch (error) {
-    logger.error(`Password reset failed: ${error.message}`);
-    next(error);
+    logger.error(`Reset password failed: ${error.message}`);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
-// 7. Get current admin (me)
+/**
+ * Get current admin info
+ * GET /api/auth/me
+ */
 exports.getMe = async (req, res, next) => {
   try {
-    const admin = await Admin.findById(req.admin._id);
-    
+    // Admin is already attached by auth middleware
+    // Just return the data in consistent format
     res.json({
       success: true,
-      data: admin
+      data: {
+        _id: req.admin._id,
+        name: req.admin.name,
+        email: req.admin.email,
+        emailVerified: req.admin.emailVerified,
+        createdAt: req.admin.createdAt,
+        lastLogin: req.admin.lastLogin
+      }
     });
   } catch (error) {
     logger.error(`Get current admin failed: ${error.message}`);
@@ -549,7 +282,10 @@ exports.getMe = async (req, res, next) => {
   }
 };
 
-// 8. Update profile
+/**
+ * Update admin profile
+ * PUT /api/auth/profile
+ */
 exports.updateProfile = async (req, res, next) => {
   try {
     const { name } = req.body;
@@ -561,17 +297,24 @@ exports.updateProfile = async (req, res, next) => {
       });
     }
     
-    const admin = await Admin.findById(req.admin._id);
+    // Validate name
+    const nameCheck = validateName(name);
+    if (!nameCheck.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: nameCheck.error
+      });
+    }
     
-    admin.name = name;
-    await admin.save();
-    
-    logger.info(`Profile updated: ${admin.email}`);
+    // Delegate to service
+    const updatedAdmin = await authService.updateProfile(req.admin._id, {
+      name: nameCheck.value
+    });
     
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: admin
+      data: updatedAdmin
     });
   } catch (error) {
     logger.error(`Update profile failed: ${error.message}`);
@@ -579,12 +322,14 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
-// 9. Change password
+/**
+ * Change password
+ * PUT /api/auth/change-password
+ */
 exports.changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
-    // Validate input
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
@@ -592,31 +337,17 @@ exports.changePassword = async (req, res, next) => {
       });
     }
     
-    // Validate new password strength
-    if (newPassword.length < 8) {
+    // Validate new password
+    const passwordCheck = validatePassword(newPassword);
+    if (!passwordCheck.isValid) {
       return res.status(400).json({
         success: false,
-        error: 'New password must be at least 8 characters long'
+        error: passwordCheck.error
       });
     }
     
-    const admin = await Admin.findById(req.admin._id).select('+password');
-    
-    // Verify current password
-    const isMatch = await admin.comparePassword(currentPassword);
-    
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        error: 'Current password is incorrect'
-      });
-    }
-    
-    // Update password
-    admin.password = newPassword;
-    await admin.save();
-    
-    logger.info(`Password changed: ${admin.email}`);
+    // Delegate to service
+    await authService.changePassword(req.admin._id, currentPassword, newPassword);
     
     res.json({
       success: true,
@@ -624,11 +355,23 @@ exports.changePassword = async (req, res, next) => {
     });
   } catch (error) {
     logger.error(`Change password failed: ${error.message}`);
+    
+    // Handle incorrect current password
+    if (error.message === 'Current password is incorrect') {
+      return res.status(401).json({
+        success: false,
+        error: error.message
+      });
+    }
+    
     next(error);
   }
 };
 
-// 10. Logout (client-side token deletion)
+/**
+ * Logout admin
+ * POST /api/auth/logout
+ */
 exports.logout = async (req, res, next) => {
   try {
     logger.info(`Admin logout: ${req.admin.email}`);

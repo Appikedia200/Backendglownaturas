@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const securityConfig = require('../config/security.config');
 
 const adminSchema = new mongoose.Schema({
   name: {
@@ -53,7 +54,7 @@ adminSchema.pre('save', async function(next) {
     return next();
   }
   
-  const salt = await bcrypt.genSalt(12);
+  const salt = await bcrypt.genSalt(securityConfig.auth.bcryptRounds);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
@@ -79,11 +80,12 @@ adminSchema.methods.incLoginAttempts = function() {
   
   const updates = { $inc: { loginAttempts: 1 } };
   
-  const maxAttempts = 5;
-  const lockTime = 2 * 60 * 60 * 1000; // 2 hours
+  // Use config instead of hardcoded values
+  const maxAttempts = securityConfig.auth.maxLoginAttempts;
+  const lockTimeMs = securityConfig.auth.accountLockHours * 60 * 60 * 1000;
   
   if (this.loginAttempts + 1 >= maxAttempts && !this.isLocked()) {
-    updates.$set = { lockUntil: Date.now() + lockTime };
+    updates.$set = { lockUntil: Date.now() + lockTimeMs };
   }
   
   return this.updateOne(updates);
@@ -100,7 +102,9 @@ adminSchema.methods.resetLoginAttempts = function() {
 // Generate email verification token
 adminSchema.methods.generateEmailVerificationToken = function() {
   // Generate random token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationToken = crypto
+    .randomBytes(securityConfig.auth.tokenLength)
+    .toString('hex');
   
   // Hash token and set to emailVerificationToken field
   this.emailVerificationToken = crypto
@@ -108,8 +112,8 @@ adminSchema.methods.generateEmailVerificationToken = function() {
     .update(verificationToken)
     .digest('hex');
   
-  // Set token expiration (24 hours)
-  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+  // Set token expiration from config
+  this.emailVerificationExpires = Date.now() + securityConfig.auth.emailVerificationExpiry;
   
   return verificationToken;
 };
@@ -117,7 +121,9 @@ adminSchema.methods.generateEmailVerificationToken = function() {
 // Generate password reset token
 adminSchema.methods.generatePasswordResetToken = function() {
   // Generate random token
-  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetToken = crypto
+    .randomBytes(securityConfig.auth.tokenLength)
+    .toString('hex');
   
   // Hash token and set to passwordResetToken field
   this.passwordResetToken = crypto
@@ -125,8 +131,8 @@ adminSchema.methods.generatePasswordResetToken = function() {
     .update(resetToken)
     .digest('hex');
   
-  // Set token expiration (1 hour)
-  this.passwordResetExpires = Date.now() + 60 * 60 * 1000;
+  // Set token expiration from config
+  this.passwordResetExpires = Date.now() + securityConfig.auth.passwordResetExpiry;
   
   return resetToken;
 };

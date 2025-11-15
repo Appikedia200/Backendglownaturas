@@ -1,6 +1,7 @@
 const transporter = require('../config/email');
 const EmailTemplate = require('../models/EmailTemplate');
 const Settings = require('../models/Settings');
+const logger = require('../config/logger');
 const path = require('path');
 
 exports.sendEmail = async (options) => {
@@ -12,10 +13,17 @@ exports.sendEmail = async (options) => {
   };
   
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Email sent to ${options.to}`);
+    const info = await transporter.sendMail(mailOptions);
+    logger.info(`Email sent successfully to ${options.to}`, {
+      messageId: info.messageId,
+      subject: options.subject
+    });
+    return info;
   } catch (error) {
-    console.error(`Email send failed to ${options.to}:`, error.message);
+    logger.error(`Email send failed to ${options.to}: ${error.message}`, {
+      subject: options.subject,
+      error: error.stack
+    });
     throw error;
   }
 };
@@ -182,7 +190,7 @@ exports.sendOrderEmail = async (order, templateType, pdfPath = null) => {
     const template = await EmailTemplate.findOne({ templateType });
     
     if (!template || !template.isActive) {
-      console.log(`Template ${templateType} not found or inactive`);
+      logger.warn(`Template ${templateType} not found or inactive`);
       return;
     }
     
@@ -279,9 +287,16 @@ exports.sendOrderEmail = async (order, templateType, pdfPath = null) => {
     // Send email
     await this.sendEmail(mailOptions);
     
-    console.log(`Order email sent: ${templateType} to ${order.customer.email}`);
+    logger.info(`Order email sent: ${templateType} to ${order.customer.email}`, {
+      orderId: order._id,
+      templateType
+    });
   } catch (error) {
-    console.error(`Failed to send order email: ${error.message}`);
+    logger.error(`Failed to send order email: ${error.message}`, {
+      orderId: order._id,
+      templateType,
+      error: error.stack
+    });
     // Don't throw error - email failure shouldn't block order processing
   }
 };
