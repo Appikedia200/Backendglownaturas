@@ -20,8 +20,11 @@ exports.validateEmail = (email) => {
     };
   }
   
-  // Email format validation
-  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  // More robust email validation supporting:
+  // - International TLDs (.info, .museum, etc.)
+  // - Subdomains
+  // - Special characters in local part
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   if (!emailRegex.test(email)) {
     return {
       isValid: false,

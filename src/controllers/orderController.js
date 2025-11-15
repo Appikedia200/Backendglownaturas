@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { generateOrderId, calculateShippingFee } = require('../utils/helpers');
@@ -5,36 +6,57 @@ const { sendOrderEmail } = require('../utils/emailService');
 const { generatePDFReceipt } = require('../utils/pdfGenerator');
 const logger = require('../config/logger');
 
-// Create new order
+// Create new order with MongoDB transactions to prevent race conditions
 exports.createOrder = async (req, res, next) => {
+  // Start a MongoDB session for transaction support
+  const session = await mongoose.startSession();
+  
   try {
+    // Start transaction
+    await session.startTransaction();
+    
     const { customer, items, paymentMethod, notes } = req.body;
     
-    // Validate stock availability
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          error: `Product ${item.product} not found`
-        });
-      }
-      
-      if (product.availableStock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          error: `Insufficient stock for ${product.name}. Available: ${product.availableStock}`
-        });
-      }
-    }
-    
-    // Calculate totals
+    // Calculate totals and prepare order items
     let subtotal = 0;
     const orderItems = [];
     
+    // Atomic stock validation and reservation
     for (const item of items) {
-      const product = await Product.findById(item.product);
+      // Use findOneAndUpdate with atomic operations to prevent race conditions
+      const product = await Product.findOneAndUpdate(
+        {
+          _id: item.product,
+          // Ensure available stock (stock - reservedStock) is sufficient
+          $expr: {
+            $gte: [
+              { $subtract: ['$stock', '$reservedStock'] },
+              item.quantity
+            ]
+          }
+        },
+        {
+          // Atomically increment reserved stock
+          $inc: { reservedStock: item.quantity }
+        },
+        {
+          session, // Use transaction session
+          new: true, // Return updated document
+          runValidators: true
+        }
+      );
+      
+      if (!product) {
+        // Stock check failed - product not found or insufficient stock
+        const productDoc = await Product.findById(item.product).session(session);
+        if (!productDoc) {
+          throw new Error(`Product ${item.product} not found`);
+        }
+        throw new Error(
+          `Insufficient stock for ${productDoc.name}. Available: ${productDoc.availableStock}, Requested: ${item.quantity}`
+        );
+      }
+      
       const itemSubtotal = product.price * item.quantity;
       subtotal += itemSubtotal;
       
@@ -46,13 +68,18 @@ exports.createOrder = async (req, res, next) => {
         price: product.price,
         subtotal: itemSubtotal
       });
+      
+      logger.info(`Reserved ${item.quantity} units of ${product.name} (Transaction)`, {
+        productId: product._id,
+        availableStock: product.availableStock
+      });
     }
     
     const shippingFee = calculateShippingFee(customer.city, customer.state);
     const total = subtotal + shippingFee;
     
-    // Create order
-    const order = await Order.create({
+    // Create order within transaction
+    const order = await Order.create([{
       orderId: generateOrderId(),
       customer,
       items: orderItems,
@@ -65,34 +92,56 @@ exports.createOrder = async (req, res, next) => {
       notes: {
         customer: notes?.customer || ''
       },
-      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000), // 6 hours
       statusHistory: [{
         status: 'pending',
         date: Date.now(),
         note: 'Order created - awaiting payment'
       }]
+    }], { session }); // Note: create() with session requires array format
+    
+    // Commit transaction - all operations succeed or all fail
+    await session.commitTransaction();
+    
+    logger.info(`Order created successfully: ${order[0].orderId} - Total: ₦${total}`, {
+      orderId: order[0]._id,
+      itemCount: items.length
     });
     
-    // Reserve stock
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      await product.reserveStock(item.quantity);
-      logger.info(`Reserved ${item.quantity} units of ${product.name} for order ${order.orderId}`);
+    // Send email AFTER transaction commits (outside transaction to avoid email delays)
+    try {
+      await sendOrderEmail(order[0], 'order_pending');
+    } catch (emailError) {
+      // Log email failure but don't fail the order
+      logger.error(`Failed to send order confirmation email for ${order[0].orderId}: ${emailError.message}`);
     }
-    
-    // Send payment pending email
-    await sendOrderEmail(order, 'order_pending');
-    
-    logger.info(`Order created: ${order.orderId} - Total: ₦${total}`);
     
     res.status(201).json({
       success: true,
-      data: order,
+      data: order[0],
       message: 'Order created successfully. Please complete payment within 6 hours.'
     });
+    
   } catch (error) {
-    logger.error(`Order creation failed: ${error.message}`);
+    // Rollback transaction on any error
+    await session.abortTransaction();
+    
+    logger.error(`Order creation failed: ${error.message}`, {
+      error: error.stack
+    });
+    
+    // Return appropriate error message
+    if (error.message.includes('Insufficient stock') || error.message.includes('not found')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+    
     next(error);
+  } finally {
+    // Always end the session
+    session.endSession();
   }
 };
 
@@ -178,6 +227,21 @@ exports.updateOrderStatus = async (req, res, next) => {
       internalNote
     } = req.body;
     
+    // Validate text inputs
+    if (customMessage && customMessage.length > 500) {
+      return res.status(400).json({
+        success: false,
+        error: 'Custom message is too long. Maximum 500 characters.'
+      });
+    }
+    
+    if (internalNote && internalNote.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Internal note is too long. Maximum 1000 characters.'
+      });
+    }
+    
     const order = await Order.findById(id).populate('items.product');
     
     if (!order) {
@@ -253,6 +317,13 @@ exports.cancelOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
+    
+    if (reason && reason.length > 500) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cancellation reason is too long. Maximum length is 500 characters.'
+      });
+    }
     
     const order = await Order.findById(id).populate('items.product');
     
@@ -348,7 +419,8 @@ exports.getAllOrders = async (req, res, next) => {
       .skip(skip)
       .limit(parseInt(limit))
       .populate('items.product', 'name slug images')
-      .select('-__v');
+      .select('-__v')
+      .lean(); // Returns plain JavaScript objects (faster, less memory)
     
     const total = await Order.countDocuments(query);
     
@@ -395,6 +467,21 @@ exports.addOrderNote = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { note } = req.body;
+    
+    // Validate note input
+    if (!note || typeof note !== 'string' || note.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Note is required and must be a non-empty string'
+      });
+    }
+    
+    if (note.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Note is too long. Maximum length is 2000 characters.'
+      });
+    }
     
     const order = await Order.findById(id);
     
@@ -546,7 +633,8 @@ exports.exportOrders = async (req, res, next) => {
     
     const orders = await Order.find(query)
       .sort({ createdAt: -1 })
-      .populate('items.product', 'name sku');
+      .populate('items.product', 'name sku')
+      .lean(); // Much faster for large exports
     
     // Generate CSV
     const csv = generateOrdersCSV(orders);

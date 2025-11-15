@@ -199,6 +199,11 @@ orderSchema.index({ 'customer.email': 1 });
 orderSchema.index({ status: 1, paymentStatus: 1 });
 orderSchema.index({ createdAt: -1 });
 
+// Compound indexes for common query patterns
+orderSchema.index({ status: 1, paymentStatus: 1, createdAt: -1 });
+orderSchema.index({ 'customer.email': 1, createdAt: -1 });
+orderSchema.index({ status: 1, expiresAt: 1 }); // For expired orders job
+
 // Virtual for days since order
 orderSchema.virtual('daysSinceOrder').get(function() {
   return Math.floor((Date.now() - this.createdAt) / (1000 * 60 * 60 * 24));

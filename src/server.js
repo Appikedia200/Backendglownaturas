@@ -10,6 +10,38 @@ const { generalLimiter } = require('./middleware/rateLimiter');
 const logger = require('./config/logger');
 const scheduleExpiredOrdersJob = require('./jobs/expiredOrders');
 
+// Environment Variables Validation
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'BREVO_SMTP_HOST',
+  'BREVO_SMTP_USER',
+  'BREVO_SMTP_PASSWORD',
+  'FROM_EMAIL',
+  'FROM_NAME',
+  'ADMIN_URL',
+  'FRONTEND_URL',
+  'COMPANY_EMAIL_DOMAIN'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error('\n--- CRITICAL ERROR: Missing required environment variables:');
+  console.error(missingEnvVars.map(v => `  - ${v}`).join('\n'));
+  console.error('\nApplication cannot start without these variables. Please check your .env file.\n');
+  process.exit(1);
+}
+
+// Validate JWT_SECRET strength
+if (process.env.JWT_SECRET.length < 32) {
+  console.error('\n--- CRITICAL ERROR: JWT_SECRET must be at least 32 characters long for security.');
+  console.error('Current length:', process.env.JWT_SECRET.length);
+  process.exit(1);
+}
+
+logger.info('Environment variables validated successfully');
+
 const authRoutes = require('./routes/auth');
 const productsRoutes = require('./routes/products');
 const categoriesRoutes = require('./routes/categories');
@@ -27,17 +59,47 @@ connectDatabase();
 
 scheduleExpiredOrdersJob();
 
-app.use(helmet());
+// Enhanced Helmet configuration for production security
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: {
+    action: 'deny'
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  }
+}));
 app.use(corsMiddleware);
 app.use(sanitizeData);
 app.use(generalLimiter);
+
+// Add unique request ID for tracking
+app.use((req, res, next) => {
+  req.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(morgan('combined', {
   stream: {
-    write: (message) => logger.http(message.trim())
+    write: (message) => logger.http(message.trim(), { requestId: 'http' })
   }
 }));
 

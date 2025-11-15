@@ -7,9 +7,18 @@ const corsOptions = {
       process.env.ADMIN_URL,
       'http://localhost:3000',
       'http://localhost:3001'
-    ];
+    ].filter(Boolean); // Remove undefined values
     
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // In development, allow requests with no origin (Postman, etc.)
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (isDevelopment && !origin) {
+      callback(null, true);
+      return;
+    }
+    
+    // In production, origin must be in whitelist
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

@@ -202,5 +202,9 @@ productSchema.index({ name: 'text', description: 'text', keywords: 'text' });
 productSchema.index({ category: 1, status: 1 });
 productSchema.index({ featured: 1 });
 
+// Additional performance indexes
+productSchema.index({ status: 1, featured: -1 }); // For featured products query
+productSchema.index({ category: 1, status: 1, featured: -1 }); // Category + featured
+
 module.exports = mongoose.model('Product', productSchema);
 

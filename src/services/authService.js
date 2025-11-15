@@ -50,10 +50,20 @@ exports.registerAdmin = async (adminData) => {
     
     logger.info(`Admin registered successfully: ${admin.email}`);
   } catch (emailError) {
-    // If email fails, delete the admin account (transaction-like behavior)
-    await admin.deleteOne();
-    logger.error(`Failed to send verification email for ${email}: ${emailError.message}`);
-    throw new Error('Failed to send verification email. Please try again.');
+    // Log error but don't delete account - user can resend verification
+    logger.error(`Failed to send verification email for ${email}: ${emailError.message}`, {
+      adminId: admin._id,
+      error: emailError.stack
+    });
+    
+    logger.warn(`Account created but verification email failed for ${email}. User should use /resend-verification endpoint.`);
+    
+    // Return success but indicate email issue
+    return {
+      email: admin.email,
+      emailVerified: false,
+      emailDeliveryWarning: 'Account created but verification email may not have been delivered. Please check spam or request a new verification email.'
+    };
   }
   
   return {

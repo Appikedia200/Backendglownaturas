@@ -16,7 +16,14 @@ const connectDatabase = async () => {
     });
     
   } catch (error) {
-    console.error(`Database connection failed: ${error.message}`);
+    // Don't expose MongoDB connection string in error messages
+    console.error('--- Database connection failed. Check MONGODB_URI environment variable.');
+    
+    // Log detailed error securely (won't expose connection string)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error details:', error.message);
+    }
+    
     process.exit(1);
   }
 };

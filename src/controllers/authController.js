@@ -337,6 +337,14 @@ exports.changePassword = async (req, res, next) => {
       });
     }
     
+    // Prevent setting same password
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'New password must be different from current password'
+      });
+    }
+    
     // Validate new password
     const passwordCheck = validatePassword(newPassword);
     if (!passwordCheck.isValid) {
