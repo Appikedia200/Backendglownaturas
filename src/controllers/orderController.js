@@ -4,6 +4,8 @@ const Product = require('../models/Product');
 const { generateOrderId, calculateShippingFee } = require('../utils/helpers');
 const { sendOrderEmail } = require('../utils/emailService');
 const { generatePDFReceipt } = require('../utils/pdfGenerator');
+const { sanitizeSearchQuery } = require('../utils/searchHelper');
+const { validatePagination, buildPaginatedResponse } = require('../utils/paginationHelper');
 const logger = require('../config/logger');
 
 // Create new order with MongoDB transactions to prevent race conditions
@@ -145,29 +147,75 @@ exports.createOrder = async (req, res, next) => {
   }
 };
 
-// Confirm payment
+// Confirm payment with MongoDB transaction to ensure atomic operations
 exports.confirmPayment = async (req, res, next) => {
+  // Start MongoDB session for transaction support
+  const session = await mongoose.startSession();
+  
   try {
+    // Start transaction for atomic payment confirmation
+    await session.startTransaction();
+    
     const { id } = req.params;
     const { transactionReference, paidAmount, paymentProof } = req.body;
     
-    const order = await Order.findById(id).populate('items.product');
+    // Fetch order with session to lock document
+    const order = await Order.findById(id).populate('items.product').session(session);
     
     if (!order) {
+      await session.abortTransaction();
       return res.status(404).json({
         success: false,
         error: 'Order not found'
       });
     }
     
+    // Check payment status to prevent double processing
     if (order.paymentStatus !== 'pending') {
+      await session.abortTransaction();
       return res.status(400).json({
         success: false,
-        error: 'Payment already processed'
+        error: 'Payment already processed for this order',
+        errorCode: 'PAYMENT_ALREADY_PROCESSED'
       });
     }
     
-    // Update payment details
+    // Check if order has expired
+    if (order.expiresAt && order.expiresAt < new Date()) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        error: 'Order has expired. Reserved stock has been released.',
+        errorCode: 'ORDER_EXPIRED'
+      });
+    }
+    
+    // Atomically deduct stock for all items
+    for (const item of order.items) {
+      const product = await Product.findById(item.product._id).session(session);
+      
+      // Validate product still exists
+      if (!product) {
+        throw new Error(`Product ${item.productName} no longer exists`);
+      }
+      
+      // Validate reserved stock is available
+      if (product.reservedStock < item.quantity) {
+        throw new Error(`Insufficient reserved stock for ${product.name}. Expected: ${item.quantity}, Available: ${product.reservedStock}`);
+      }
+      
+      // Atomically confirm stock deduction (deduct from both reservedStock and stock)
+      await product.confirmStockDeduction(item.quantity);
+      
+      logger.info(`Stock deducted atomically: ${item.quantity} units of ${product.name} for order ${order.orderId}`, {
+        orderId: order._id,
+        productId: product._id,
+        quantity: item.quantity,
+        transaction: true
+      });
+    }
+    
+    // Update order payment details within transaction
     order.paymentStatus = 'paid';
     order.status = 'processing';
     order.paymentDetails = {
@@ -183,31 +231,63 @@ exports.confirmPayment = async (req, res, next) => {
       note: 'Payment confirmed by admin'
     });
     
-    await order.save();
+    await order.save({ session });
     
-    // Deduct stock (payment confirmed!)
-    for (const item of order.items) {
-      const product = await Product.findById(item.product);
-      await product.confirmStockDeduction(item.quantity);
-      logger.info(`Deducted ${item.quantity} units of ${product.name} for paid order ${order.orderId}`);
+    // Commit transaction - all operations succeed or all fail
+    await session.commitTransaction();
+    
+    logger.info(`Payment confirmed successfully: ${order.orderId} - Total: ${order.total}`, {
+      orderId: order._id,
+      transactionReference: transactionReference,
+      itemCount: order.items.length
+    });
+    
+    // Generate PDF receipt AFTER transaction commits (non-blocking)
+    let pdfPath;
+    try {
+      pdfPath = await generatePDFReceipt(order);
+    } catch (pdfError) {
+      // Log PDF generation failure but don't fail the payment
+      logger.error(`PDF generation failed for order ${order.orderId}: ${pdfError.message}`);
     }
     
-    // Generate PDF receipt
-    const pdfPath = await generatePDFReceipt(order);
-    
-    // Send payment confirmed email with PDF
-    await sendOrderEmail(order, 'payment_confirmed', pdfPath);
-    
-    logger.info(`Payment confirmed for order: ${order.orderId}`);
+    // Send payment confirmed email AFTER transaction commits (non-blocking)
+    try {
+      await sendOrderEmail(order, 'payment_confirmed', pdfPath);
+    } catch (emailError) {
+      // Log email failure but don't fail the payment
+      logger.error(`Payment confirmation email failed for ${order.orderId}: ${emailError.message}`);
+    }
     
     res.json({
       success: true,
       data: order,
-      message: 'Payment confirmed and stock deducted'
+      message: 'Payment confirmed and stock deducted successfully'
     });
+    
   } catch (error) {
-    logger.error(`Payment confirmation failed: ${error.message}`);
+    // Rollback transaction on any error
+    await session.abortTransaction();
+    
+    logger.error(`Payment confirmation failed: ${error.message}`, {
+      orderId: id,
+      error: error.stack,
+      transaction: 'rolled_back'
+    });
+    
+    // Return appropriate error based on type
+    if (error.message.includes('Insufficient reserved stock') || error.message.includes('no longer exists')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message,
+        errorCode: 'STOCK_VALIDATION_FAILED'
+      });
+    }
+    
     next(error);
+  } finally {
+    // Always end the session
+    session.endSession();
   }
 };
 
@@ -396,12 +476,22 @@ exports.getAllOrders = async (req, res, next) => {
     if (status) query.status = status;
     if (paymentStatus) query.paymentStatus = paymentStatus;
     
-    // Search by order ID or customer name/email
+    // Search by order ID or customer name/email (ReDoS protected)
     if (search) {
+      const sanitizedSearch = sanitizeSearchQuery(search, 100);
+      
+      if (!sanitizedSearch) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid search query. Must be 1-100 characters.',
+          errorCode: 'INVALID_SEARCH_QUERY'
+        });
+      }
+      
       query.$or = [
-        { orderId: { $regex: search, $options: 'i' } },
-        { 'customer.name': { $regex: search, $options: 'i' } },
-        { 'customer.email': { $regex: search, $options: 'i' } }
+        { orderId: { $regex: sanitizedSearch, $options: 'i' } },
+        { 'customer.name': { $regex: sanitizedSearch, $options: 'i' } },
+        { 'customer.email': { $regex: sanitizedSearch, $options: 'i' } }
       ];
     }
     
@@ -412,26 +502,22 @@ exports.getAllOrders = async (req, res, next) => {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
     
-    const skip = (page - 1) * limit;
+    // Validate and sanitize pagination parameters
+    const { page: validPage, limit: validLimit, skip } = validatePagination(req.query);
     
     const orders = await Order.find(query)
       .sort(sortBy)
       .skip(skip)
-      .limit(parseInt(limit))
+      .limit(validLimit)
       .populate('items.product', 'name slug images')
       .select('-__v')
       .lean(); // Returns plain JavaScript objects (faster, less memory)
     
     const total = await Order.countDocuments(query);
     
-    res.json({
-      success: true,
-      count: orders.length,
-      total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
-      data: orders
-    });
+    // Build standard paginated response
+    const response = buildPaginatedResponse(orders, total, validPage, validLimit);
+    res.json(response);
   } catch (error) {
     logger.error(`Get orders failed: ${error.message}`);
     next(error);
@@ -651,18 +737,55 @@ exports.exportOrders = async (req, res, next) => {
 };
 
 // Helper function to generate CSV
+/**
+ * Sanitize CSV cell to prevent formula injection
+ * Protects against CSV injection attacks by prefixing dangerous characters
+ * 
+ * @param {*} value - Cell value to sanitize
+ * @returns {string} Sanitized cell value
+ */
+function sanitizeCsvCell(value) {
+  if (value === null || value === undefined) return '';
+  
+  const stringValue = String(value);
+  
+  // Prevent formula injection - prepend single quote to dangerous characters
+  // Dangerous chars: = + - @ \t \r (can execute formulas in Excel/Calc)
+  const dangerousChars = ['=', '+', '-', '@', '\t', '\r'];
+  if (dangerousChars.some(char => stringValue.startsWith(char))) {
+    return `'${stringValue}`;
+  }
+  
+  // Escape quotes and wrap in quotes if contains comma, quotes, or newlines
+  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  
+  return stringValue;
+}
+
+/**
+ * Generate CSV export of orders with formula injection protection
+ * 
+ * @param {Array} orders - Array of order documents
+ * @returns {string} CSV string with sanitized data
+ */
 function generateOrdersCSV(orders) {
   const headers = ['Order ID', 'Date', 'Customer Name', 'Customer Email', 'Items', 'Total', 'Payment Status', 'Order Status'];
+  
   const rows = orders.map(order => [
-    order.orderId,
-    order.createdAt.toLocaleDateString(),
-    order.customer.name,
-    order.customer.email,
-    order.items.length,
-    order.total,
-    order.paymentStatus,
-    order.status
+    sanitizeCsvCell(order.orderId),
+    sanitizeCsvCell(order.createdAt.toLocaleDateString()),
+    sanitizeCsvCell(order.customer.name),
+    sanitizeCsvCell(order.customer.email),
+    sanitizeCsvCell(order.items.length),
+    sanitizeCsvCell(order.total),
+    sanitizeCsvCell(order.paymentStatus),
+    sanitizeCsvCell(order.status)
   ]);
   
-  return [headers, ...rows].map(row => row.join(',')).join('\n');
+  // Sanitize headers as well
+  return [headers.map(sanitizeCsvCell), ...rows]
+    .map(row => row.join(','))
+    .join('\n');
 }

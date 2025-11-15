@@ -1,27 +1,30 @@
 const mongoose = require('mongoose');
+const logger = require('./logger');
 
 const connectDatabase = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    console.log(`Database: ${conn.connection.name}`);
+    logger.info(`MongoDB Connected: ${conn.connection.host}`);
+    logger.info(`Database: ${conn.connection.name}`);
     
     mongoose.connection.on('error', (err) => {
-      console.error(`MongoDB connection error: ${err}`);
+      logger.error(`MongoDB connection error: ${err.message}`, {
+        error: err.stack
+      });
     });
     
     mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected');
+      logger.warn('MongoDB disconnected');
     });
     
   } catch (error) {
     // Don't expose MongoDB connection string in error messages
-    console.error('--- Database connection failed. Check MONGODB_URI environment variable.');
+    logger.error('Database connection failed. Check MONGODB_URI environment variable.');
     
     // Log detailed error securely (won't expose connection string)
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error details:', error.message);
+      logger.error('Error details', { message: error.message });
     }
     
     process.exit(1);

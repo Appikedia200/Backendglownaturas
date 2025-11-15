@@ -1,4 +1,5 @@
 const cors = require('cors');
+const logger = require('../config/logger');
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -21,7 +22,16 @@ const corsOptions = {
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // SECURITY: Log blocked origin for monitoring without exposing configuration
+      logger.warn('CORS origin blocked', {
+        origin: origin || 'no-origin',
+        timestamp: new Date().toISOString(),
+        event: 'cors_violation'
+      });
+      
+      // Return false to block silently (prevents information disclosure)
+      // DO NOT throw error as it exposes internal configuration
+      callback(null, false);
     }
   },
   credentials: true,

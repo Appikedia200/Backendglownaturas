@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const mongoose = require('mongoose');
 const connectDatabase = require('./config/database');
 const corsMiddleware = require('./middleware/cors');
 const errorHandler = require('./middleware/errorHandler');
@@ -94,14 +95,71 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Request body size limits to prevent DoS attacks
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    // Store raw body for signature verification if needed later
+    req.rawBody = buf;
+  }
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '10mb' 
+}));
+
+// Error handler for payload too large
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      error: 'Request payload too large. Maximum size is 10MB.',
+      errorCode: 'PAYLOAD_TOO_LARGE'
+    });
+  }
+  next(err);
+});
 
 app.use(morgan('combined', {
   stream: {
     write: (message) => logger.http(message.trim(), { requestId: 'http' })
   }
 }));
+
+// Health check endpoint (no authentication required)
+// Used by monitoring tools and load balancers
+app.get('/health', (req, res) => {
+  const mongoStatus = mongoose.connection.readyState;
+  const mongoStatusMap = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+  
+  const isHealthy = mongoStatus === 1;
+  
+  const healthData = {
+    status: isHealthy ? 'healthy' : 'unhealthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '5.1.0',
+    environment: process.env.NODE_ENV || 'development',
+    dependencies: {
+      mongodb: {
+        status: mongoStatusMap[mongoStatus],
+        connected: isHealthy
+      }
+    },
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+      unit: 'MB'
+    }
+  };
+  
+  res.status(isHealthy ? 200 : 503).json(healthData);
+});
 
 app.get('/', (req, res) => {
   res.json({
@@ -157,25 +215,58 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  logger.info(`GlowNaturas API v5.0 started on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  logger.info(`GlowNaturas API v5.1.0 started on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('\n========================================');
-  console.log(`GlowNaturas API v5.0 - Complete Auth System`);
+  console.log(`GlowNaturas API v5.1.0 - Security Enhanced`);
   console.log(`Port: ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`URL: http://localhost:${PORT}`);
+  console.log(`Health Check: http://localhost:${PORT}/health`);
   console.log('========================================\n');
 });
 
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+  logger.info(`${signal} received, starting graceful shutdown...`);
+  
+  // Stop accepting new connections
+  server.close(async () => {
+    logger.info('HTTP server closed, no longer accepting connections');
+    
+    try {
+      // Close database connection
+      await mongoose.connection.close(false);
+      logger.info('MongoDB connection closed');
+      
+      logger.info('Graceful shutdown completed successfully');
+      process.exit(0);
+    } catch (error) {
+      logger.error(`Error during shutdown: ${error.message}`, { stack: error.stack });
+      process.exit(1);
+    }
+  });
+  
+  // Force shutdown after 30 seconds if graceful shutdown hangs
+  setTimeout(() => {
+    logger.error('Forced shutdown due to timeout (30s exceeded)');
+    process.exit(1);
+  }, 30000);
+};
+
+// Register signal handlers for graceful shutdown
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle unhandled rejections with graceful shutdown
 process.on('unhandledRejection', (err) => {
-  logger.error(`Unhandled Rejection: ${err.message}`);
-  console.error(`Error: ${err.message}`);
-  process.exit(1);
+  logger.error(`Unhandled Rejection: ${err.message}`, { stack: err.stack });
+  gracefulShutdown('unhandledRejection');
 });
 
+// Handle uncaught exceptions with graceful shutdown
 process.on('uncaughtException', (err) => {
-  logger.error(`Uncaught Exception: ${err.message}`);
-  console.error(`Error: ${err.message}`);
-  process.exit(1);
+  logger.error(`Uncaught Exception: ${err.message}`, { stack: err.stack });
+  gracefulShutdown('uncaughtException');
 });

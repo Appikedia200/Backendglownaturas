@@ -1,5 +1,18 @@
+const logger = require('../config/logger');
+
 const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err);
+  // Log error with context for debugging
+  logger.error('Application error', {
+    message: err.message,
+    stack: err.stack,
+    code: err.code,
+    name: err.name,
+    statusCode: err.statusCode,
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    requestId: req.id
+  });
   
   let error = { ...err };
   error.message = err.message;
