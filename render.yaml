@@ -1,0 +1,77 @@
+services:
+  # GlowNatura Backend API
+  - type: web
+    name: glownatura-backend
+    env: node
+    region: ohio # Change to your preferred region
+    plan: free # Options: free, starter, standard, pro
+    branch: main # Change to your default branch if different
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    
+    # Environment Variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: 5000
+      
+      # MongoDB - Add your MongoDB Atlas connection string
+      - key: MONGODB_URI
+        sync: false # Set in Render Dashboard (Secret)
+      
+      # JWT Configuration
+      - key: JWT_SECRET
+        sync: false # Set in Render Dashboard (Secret)
+      
+      - key: JWT_EXPIRE
+        value: 30d
+      
+      # Cloudinary Configuration
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # Set in Render Dashboard (Secret)
+      
+      - key: CLOUDINARY_API_KEY
+        sync: false # Set in Render Dashboard (Secret)
+      
+      - key: CLOUDINARY_API_SECRET
+        sync: false # Set in Render Dashboard (Secret)
+      
+      # Brevo Email Configuration
+      - key: BREVO_SMTP_HOST
+        value: smtp-relay.brevo.com
+      
+      - key: BREVO_SMTP_PORT
+        value: 587
+      
+      - key: BREVO_SMTP_USER
+        sync: false # Set in Render Dashboard (Secret)
+      
+      - key: BREVO_SMTP_PASSWORD
+        sync: false # Set in Render Dashboard (Secret)
+      
+      - key: BREVO_API_KEY
+        sync: false # Set in Render Dashboard (Secret)
+      
+      - key: FROM_EMAIL
+        value: orders@glownaturas.com # Update with your email
+      
+      - key: FROM_NAME
+        value: GlowNaturas
+      
+      # Admin Configuration
+      - key: COMPANY_EMAIL_DOMAIN
+        value: glownatura.com
+      
+      # Frontend URLs - Update these after deployment
+      - key: FRONTEND_URL
+        value: https://your-frontend.vercel.app # Update with your frontend URL
+      
+      - key: ADMIN_URL
+        value: https://your-admin.vercel.app # Update with your admin URL
+    
+    # Auto-deploy on push to main branch
+    autoDeploy: true
+
