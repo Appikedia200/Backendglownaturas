@@ -1,3 +1,5 @@
+const { sanitizeSearchQuery } = require('./searchHelper');
+
 exports.generateOrderId = () => {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -24,11 +26,15 @@ exports.getPaginationParams = (query) => {
 exports.buildSearchQuery = (searchTerm) => {
   if (!searchTerm) return {};
   
+  // Sanitize search term to prevent ReDoS attacks
+  const sanitized = sanitizeSearchQuery(searchTerm);
+  if (!sanitized) return {};
+  
   return {
     $or: [
-      { name: { $regex: searchTerm, $options: 'i' } },
-      { description: { $regex: searchTerm, $options: 'i' } },
-      { keywords: { $in: [new RegExp(searchTerm, 'i')] } }
+      { name: { $regex: sanitized, $options: 'i' } },
+      { description: { $regex: sanitized, $options: 'i' } },
+      { keywords: { $in: [new RegExp(sanitized, 'i')] } }
     ]
   };
 };

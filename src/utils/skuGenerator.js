@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const logger = require('../config/logger');
 
 exports.generateSKU = async (categoryId = null) => {
   let sku;
@@ -23,7 +24,11 @@ exports.generateSKU = async (categoryId = null) => {
           sku = `GN-${categoryCode}-${number}`;
         }
       } catch (error) {
-        console.error('Error generating category-based SKU:', error);
+        logger.error('Error generating category-based SKU', {
+          message: error.message,
+          stack: error.stack,
+          categoryId
+        });
       }
     }
     

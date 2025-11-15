@@ -183,8 +183,8 @@ const orderSchema = new mongoose.Schema({
   },
   
   expiresAt: {
-    type: Date,
-    index: true
+    type: Date
+    // Index created via compound index: { status: 1, expiresAt: 1 }
   },
   
   cancelledAt: Date,
