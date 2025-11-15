@@ -19,6 +19,41 @@
             "date": 1763195078113,
             "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log",
             "hash": "83a52803915f194e2c572de9b1bb73fe242bd076736b9f08def4da6a31824bcc"
+        },
+        {
+            "date": 1763231680715,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log.1",
+            "hash": "1203dc96f34b4407bbe9f40b6625c9492c597e6b7aec06a119ca38ab223817cf"
+        },
+        {
+            "date": 1763231687566,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log.2",
+            "hash": "82ac76f97dc1d7f53dbefdba9fd7bd47b6743b8635dc05014e3283d2ef92d182"
+        },
+        {
+            "date": 1763231694908,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log.3",
+            "hash": "d907f6245e26c0ad07a8d22e613148db54b0cb417f9cfc79984c8f332c89bdf0"
+        },
+        {
+            "date": 1763231700104,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log.4",
+            "hash": "81a6a5e4a71a3339fd1843a38d436478eb6f6ed1c1adadc645dc4c819d90dc9e"
+        },
+        {
+            "date": 1763231704866,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log.5",
+            "hash": "d219837ec73afb6fbd3e7a28ece840f1e5aaf773d2a4579cf406a4eea22cbce7"
+        },
+        {
+            "date": 1763231711368,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log.6",
+            "hash": "b0f2f0f2aff4e7b22921ebd98940e3ec50180a8b9d57949852dbbd83c3a7c9b1"
+        },
+        {
+            "date": 1763231719397,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\combined-2025-11-15.log.7",
+            "hash": "8e9b08fc9180160cca7c51f29a1b9aefb3e2179e074b2b318545456264c3a965"
         }
     ],
     "hashType": "sha256"
