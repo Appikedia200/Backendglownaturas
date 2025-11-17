@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const securityConfig = require('../config/security.config');
+const securityConfig = require('../../../../config/security.config');
 
 const adminSchema = new mongoose.Schema({
   name: {

@@ -1,4 +1,4 @@
-const AdminLog = require('../models/AdminLog');
+const AdminLog = require('../infrastructure/database/mongodb/models/AdminLog');
 const logger = require('../config/logger');
 
 exports.logAdminAction = (action, resource) => {
@@ -46,4 +46,5 @@ exports.logLogin = async (req, admin) => {
     logger.error(`Login audit log failed: ${err.message}`);
   }
 };
+
 

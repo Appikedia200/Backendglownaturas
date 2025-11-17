@@ -1,5 +1,5 @@
-const Review = require('../models/Review');
-const Product = require('../models/Product');
+const Review = require('../infrastructure/database/mongodb/models/Review');
+const Product = require('../infrastructure/database/mongodb/models/Product');
 
 exports.createReview = async (req, res, next) => {
   try {
@@ -175,4 +175,5 @@ exports.bulkUpdateStatus = async (req, res, next) => {
     next(error);
   }
 };
+
 

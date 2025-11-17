@@ -1,5 +1,5 @@
-const Product = require('../models/Product');
-const Category = require('../models/Category');
+const Product = require('../infrastructure/database/mongodb/models/Product');
+const Category = require('../infrastructure/database/mongodb/models/Category');
 const logger = require('../config/logger');
 
 exports.generateSKU = async (categoryId = null) => {
@@ -53,4 +53,5 @@ exports.generateSKU = async (categoryId = null) => {
   
   return sku;
 };
+
 

@@ -1,7 +1,7 @@
-const Order = require('../models/Order');
-const Product = require('../models/Product');
-const Review = require('../models/Review');
-const Admin = require('../models/Admin');
+const Order = require('../infrastructure/database/mongodb/models/Order');
+const Product = require('../infrastructure/database/mongodb/models/Product');
+const Review = require('../infrastructure/database/mongodb/models/Review');
+const Admin = require('../infrastructure/database/mongodb/models/Admin');
 
 exports.getStats = async (req, res, next) => {
   try {
@@ -151,4 +151,5 @@ exports.getSalesData = async (req, res, next) => {
     next(error);
   }
 };
+
 

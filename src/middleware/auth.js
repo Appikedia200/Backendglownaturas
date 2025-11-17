@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Admin = require('../models/Admin');
+const Admin = require('../infrastructure/database/mongodb/models/Admin');
 const logger = require('../config/logger');
 
 exports.protect = async (req, res, next) => {

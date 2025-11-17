@@ -11,7 +11,7 @@
  */
 
 const crypto = require('crypto');
-const Admin = require('../models/Admin');
+const Admin = require('../infrastructure/database/mongodb/models/Admin');
 const emailTemplateService = require('./emailTemplateService');
 const { sendEmail } = require('../utils/emailService');
 const logger = require('../config/logger');
@@ -375,4 +375,5 @@ exports.getAdminById = async (adminId) => {
     lastLogin: admin.lastLogin
   };
 };
+
 

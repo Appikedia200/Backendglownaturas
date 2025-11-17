@@ -1,6 +1,6 @@
 const cron = require('node-cron');
-const Order = require('../models/Order');
-const Product = require('../models/Product');
+const Order = require('../infrastructure/database/mongodb/models/Order');
+const Product = require('../infrastructure/database/mongodb/models/Product');
 const logger = require('../config/logger');
 
 const scheduleExpiredOrdersJob = () => {
@@ -54,4 +54,5 @@ const scheduleExpiredOrdersJob = () => {
 };
 
 module.exports = scheduleExpiredOrdersJob;
+
 

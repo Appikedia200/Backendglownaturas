@@ -1,5 +1,5 @@
-const Product = require('../models/Product');
-const Category = require('../models/Category');
+const Product = require('../infrastructure/database/mongodb/models/Product');
+const Category = require('../infrastructure/database/mongodb/models/Category');
 const { generateSKU } = require('../utils/skuGenerator');
 const { getPaginationParams, buildSearchQuery } = require('../utils/helpers');
 
@@ -193,4 +193,5 @@ exports.getLowStockProducts = async (req, res, next) => {
     next(error);
   }
 };
+
 

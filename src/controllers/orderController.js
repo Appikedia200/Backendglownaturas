@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const Order = require('../models/Order');
-const Product = require('../models/Product');
+const Order = require('../infrastructure/database/mongodb/models/Order');
+const Product = require('../infrastructure/database/mongodb/models/Product');
 const { generateOrderId, calculateShippingFee } = require('../utils/helpers');
 const { sendOrderEmail } = require('../utils/emailService');
 const { generatePDFReceipt } = require('../utils/pdfGenerator');
@@ -789,3 +789,4 @@ function generateOrdersCSV(orders) {
     .map(row => row.join(','))
     .join('\n');
 }
+

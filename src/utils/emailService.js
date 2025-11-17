@@ -1,6 +1,6 @@
 const transporter = require('../config/email');
-const EmailTemplate = require('../models/EmailTemplate');
-const Settings = require('../models/Settings');
+const EmailTemplate = require('../infrastructure/database/mongodb/models/EmailTemplate');
+const Settings = require('../infrastructure/database/mongodb/models/Settings');
 const logger = require('../config/logger');
 const path = require('path');
 
@@ -300,4 +300,5 @@ exports.sendOrderEmail = async (order, templateType, pdfPath = null) => {
     // Don't throw error - email failure shouldn't block order processing
   }
 };
+
 

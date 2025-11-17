@@ -1,4 +1,4 @@
-const EmailTemplate = require('../models/EmailTemplate');
+const EmailTemplate = require('../infrastructure/database/mongodb/models/EmailTemplate');
 const { sendEmail } = require('../utils/emailService');
 const logger = require('../config/logger');
 
@@ -195,4 +195,5 @@ exports.restoreDefault = async (req, res, next) => {
     next(error);
   }
 };
+
 

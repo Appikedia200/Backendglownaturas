@@ -1,4 +1,4 @@
-const Category = require('../models/Category');
+const Category = require('../infrastructure/database/mongodb/models/Category');
 
 exports.createCategory = async (req, res, next) => {
   try {
@@ -126,4 +126,5 @@ exports.reorderCategories = async (req, res, next) => {
     next(error);
   }
 };
+
 

@@ -1,5 +1,5 @@
-const Cart = require('../models/Cart');
-const Product = require('../models/Product');
+const Cart = require('../infrastructure/database/mongodb/models/Cart');
+const Product = require('../infrastructure/database/mongodb/models/Product');
 const logger = require('../config/logger');
 
 exports.addToCart = async (req, res, next) => {
@@ -213,4 +213,5 @@ exports.clearCart = async (req, res, next) => {
     next(error);
   }
 };
+
 

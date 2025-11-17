@@ -1,5 +1,5 @@
-const Media = require('../models/Media');
-const Product = require('../models/Product');
+const Media = require('../infrastructure/database/mongodb/models/Media');
+const Product = require('../infrastructure/database/mongodb/models/Product');
 const cloudinary = require('../config/cloudinary');
 const logger = require('../config/logger');
 
@@ -252,3 +252,4 @@ exports.bulkDeleteUnused = async (req, res, next) => {
     next(error);
   }
 };
+

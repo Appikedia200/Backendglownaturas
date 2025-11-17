@@ -1,4 +1,4 @@
-const Settings = require('../models/Settings');
+const Settings = require('../infrastructure/database/mongodb/models/Settings');
 
 exports.getSettings = async (req, res, next) => {
   try {
@@ -107,4 +107,5 @@ exports.updateSocialMedia = async (req, res, next) => {
     next(error);
   }
 };
+
 
