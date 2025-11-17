@@ -18,19 +18,17 @@ const { sanitizeData } = require('./middleware/sanitize');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./presentation/http/middleware/errorHandler.middleware');
 
-// Routes - Clean Architecture
+// Routes - Clean Architecture (ALL MIGRATED!)
 const productsRoutes = require('./presentation/http/routes/products.routes');
 const ordersRoutes = require('./presentation/http/routes/orders.routes');
 const categoriesRoutes = require('./presentation/http/routes/categories.routes');
 const reviewsRoutes = require('./presentation/http/routes/reviews.routes');
-
-// Legacy routes (keep until fully migrated)
-const authRoutes = require('./routes/auth');
-const mediaRoutes = require('./routes/media');
-const dashboardRoutes = require('./routes/dashboard');
-const settingsRoutes = require('./routes/settings');
-const cartRoutes = require('./routes/cart');
-const emailTemplatesRoutes = require('./routes/emailTemplates');
+const authRoutes = require('./presentation/http/routes/auth.routes');
+const mediaRoutes = require('./presentation/http/routes/media.routes');
+const dashboardRoutes = require('./presentation/http/routes/dashboard.routes');
+const settingsRoutes = require('./presentation/http/routes/settings.routes');
+const cartRoutes = require('./presentation/http/routes/cart.routes');
+const emailTemplatesRoutes = require('./presentation/http/routes/email-templates.routes');
 
 // Logger
 const logger = require('./config/logger');
@@ -130,13 +128,11 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes - Clean Architecture (NEW)
+// API Routes - ALL Clean Architecture! 🎉
 app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/reviews', reviewsRoutes);
-
-// API Routes - Legacy (keep until fully migrated)
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/dashboard', dashboardRoutes);
