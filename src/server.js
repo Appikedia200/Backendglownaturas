@@ -15,9 +15,7 @@ const scheduleExpiredOrdersJob = require('./jobs/expiredOrders');
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
-  'BREVO_SMTP_HOST',
-  'BREVO_SMTP_USER',
-  'BREVO_SMTP_PASSWORD',
+  'BREVO_API_KEY',
   'FROM_EMAIL',
   'FROM_NAME',
   'ADMIN_URL',
