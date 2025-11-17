@@ -239,30 +239,29 @@ If you encounter issues:
 - MongoDB Atlas: **FREE** (512MB storage)
 - Cloudinary: **FREE** (25 credits/month)
 - Brevo: **FREE** (300 emails/day)
-- **Total: $0/month** ✅
+- **Total: $0/month**
 
 ### Recommended Production (After Launch)
 - Render Starter: **$7/month**
 - MongoDB Atlas M0: **FREE**
 - Cloudinary: **$0-89/month** (pay-as-you-go)
 - Brevo: **$0-25/month** (based on emails)
-- **Total: ~$7-40/month**
+- **Total: approximately $7-40/month**
 
 ---
 
 ## READY TO DEPLOY?
 
-✅ If all items above are checked, you're ready!
+If all items above are checked, you're ready to proceed.
 
 **Next Steps:**
 1. Open `deploy-to-render.md`
 2. Follow the 5-step guide
 3. Deploy in under 15 minutes
-4. Your API will be live! 🚀
+4. Your API will be live
 
 ---
 
-**Good luck with your deployment!** 🎉
+**Good luck with your deployment.**
 
 If you need help, refer to the comprehensive `RENDER_DEPLOYMENT_GUIDE.md`.
-

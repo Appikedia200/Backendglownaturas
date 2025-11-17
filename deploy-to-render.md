@@ -1,6 +1,6 @@
 # QUICK START - DEPLOY TO RENDER
 
-Follow these steps to deploy your GlowNatura backend to Render in under 15 minutes!
+Follow these steps to deploy your GlowNatura backend to Render in under 15 minutes.
 
 ---
 
@@ -33,10 +33,10 @@ git push -u origin main
 4. Select your GitHub account
 5. Choose **`glownatura-backend`** repository
 6. Click **"Connect"**
-7. Render will detect `render.yaml` ✅
+7. Render will detect `render.yaml` (verified)
 8. Click **"Apply"**
 
-⚠️ **STOP! Don't deploy yet - set environment variables first!**
+**IMPORTANT: STOP! Don't deploy yet - set environment variables first!**
 
 ---
 
@@ -107,11 +107,11 @@ ADMIN_URL=https://your-admin.vercel.app
 
 ---
 
-## STEP 4: DEPLOY! 🚀
+## STEP 4: DEPLOY
 
 1. Click **"Manual Deploy"** → **"Deploy latest commit"**
 2. Wait 2-3 minutes for build to complete
-3. Look for: **"Your service is live 🎉"**
+3. Look for: **"Your service is live"** message
 
 ---
 
@@ -138,7 +138,7 @@ curl https://YOUR-APP-NAME.onrender.com/health
 }
 ```
 
-✅ **If you see this, your backend is live!**
+**If you see this response, your backend is live and operational.**
 
 ---
 
@@ -156,7 +156,7 @@ After deployment, your API will be available at:
 
 ## COMMON ISSUES & FIXES
 
-### ❌ "No render.yaml found"
+### ERROR: "No render.yaml found"
 **Solution:** Make sure `render.yaml` is in the root directory and pushed to GitHub.
 
 ```bash
@@ -171,7 +171,7 @@ git push
 
 ---
 
-### ❌ Build fails
+### ERROR: Build fails
 **Solution:** Check the build logs in Render Dashboard for specific errors.
 
 Common fixes:
@@ -186,7 +186,7 @@ git push
 
 ---
 
-### ❌ MongoDB connection fails
+### ERROR: MongoDB connection fails
 **Solution:** 
 1. Go to MongoDB Atlas
 2. Network Access → Add IP: `0.0.0.0/0`
@@ -195,7 +195,7 @@ git push
 
 ---
 
-### ❌ Service spins down (Free tier)
+### INFO: Service spins down (Free tier)
 **Expected behavior:** Free tier services spin down after 15 min of inactivity.
 
 **Solutions:**
@@ -209,23 +209,23 @@ git push
 
 | Your Need | Choose This |
 |-----------|-------------|
-| **Backend API (Node.js/Express)** | ✅ **Web Service** |
+| **Backend API (Node.js/Express)** | **Web Service** (CORRECT CHOICE) |
 | Cron Jobs | Background Worker |
 | Static Website (HTML/CSS/JS) | Static Site |
 | Private API (internal only) | Private Service |
 
-**For GlowNatura Backend → Choose WEB SERVICE ✅**
+**For GlowNatura Backend: Choose WEB SERVICE**
 
 ---
 
 ## NEXT STEPS
 
-1. ✅ Backend deployed to Render
+1. Backend deployed to Render
 2. Update `FRONTEND_URL` and `ADMIN_URL` after deploying frontend
 3. Test all API endpoints
 4. Set up custom domain (optional)
 5. Configure monitoring
-6. Launch! 🚀
+6. Launch to production
 
 ---
 
@@ -233,5 +233,5 @@ git push
 
 Check the full guide: `RENDER_DEPLOYMENT_GUIDE.md`
 
-**Your backend is ready for production!** 🎉
+**Your backend is ready for production deployment.**
 

@@ -11,12 +11,12 @@
 
 Before deploying, ensure you have:
 
-- ✅ GitHub/GitLab/Bitbucket account
-- ✅ Render.com account (sign up at https://render.com)
-- ✅ MongoDB Atlas database (free tier available)
-- ✅ Cloudinary account for image uploads
-- ✅ Brevo account for email services
-- ✅ All environment variable values ready
+- GitHub/GitLab/Bitbucket account
+- Render.com account (sign up at https://render.com)
+- MongoDB Atlas database (free tier available)
+- Cloudinary account for image uploads
+- Brevo account for email services
+- All environment variable values ready
 
 ---
 
@@ -34,7 +34,7 @@ Before deploying, ensure you have:
 2. **Create GitHub Repository**
    - Go to https://github.com/new
    - Create a new repository named `glownatura-backend`
-   - **Do NOT initialize with README** (you already have one)
+   - Do NOT initialize with README (you already have one)
 
 3. **Push to GitHub**
    ```bash
@@ -67,7 +67,7 @@ Before deploying, ensure you have:
 
 4. **Click "Apply"**
    - Render will create the service
-   - ⚠️ **DON'T DEPLOY YET** - You need to set environment variables first!
+   - **IMPORTANT: DON'T DEPLOY YET** - You need to set environment variables first
 
 ---
 
@@ -100,7 +100,7 @@ Before deploying, ensure you have:
 
 ### Step 3: Configure Environment Variables
 
-⚠️ **CRITICAL:** Set these BEFORE first deployment!
+**CRITICAL:** Set these BEFORE first deployment
 
 1. **In Render Dashboard, go to your service**
 2. **Click "Environment" tab**
@@ -189,12 +189,12 @@ If you don't have MongoDB Atlas set up:
 
 2. **Monitor Deployment**
    - Watch the build logs
-   - Build time: ~2-3 minutes
+   - Build time: approximately 2-3 minutes
    - Look for:
      ```
-     ==> Build successful 🎉
+     ==> Build successful
      ==> Deploying...
-     ==> Your service is live 🎉
+     ==> Your service is live
      ```
 
 3. **Check Health**
@@ -329,9 +329,9 @@ git push
 
 ### Issue 5: Free Tier Spin Down
 
-⚠️ **Render Free Tier Limitation:**
+**Render Free Tier Limitation:**
 - Services spin down after 15 minutes of inactivity
-- First request after spin-down takes ~30-60 seconds
+- First request after spin-down takes approximately 30-60 seconds
 
 **Solutions:**
 1. Upgrade to paid plan ($7/month for always-on)
@@ -342,12 +342,12 @@ git push
 
 ## RENDER FREE TIER LIMITATIONS
 
-- ✅ 750 hours/month free (enough for 1 service 24/7)
-- ⚠️ Spins down after 15 min inactivity
-- ✅ Custom domains supported
-- ✅ Automatic HTTPS
-- ⚠️ Limited to 512 MB RAM
-- ⚠️ Shared CPU
+- 750 hours/month free (enough for 1 service 24/7)
+- Spins down after 15 min inactivity
+- Custom domains supported
+- Automatic HTTPS
+- Limited to 512 MB RAM
+- Shared CPU
 
 **Recommended for:**
 - Development
@@ -388,36 +388,32 @@ curl https://your-app.onrender.com/
 
 Before going to production:
 
-- [x] All environment variables set as secrets
-- [x] MongoDB IP whitelist configured
-- [x] JWT secret is 32+ characters
-- [x] CORS configured with actual frontend URLs
-- [x] HTTPS enabled (automatic on Render)
-- [x] Health check endpoint working
-- [x] Rate limiting active
-- [x] Input validation enabled
-- [x] Winston logging configured
-- [x] Graceful shutdown implemented
+- All environment variables set as secrets
+- MongoDB IP whitelist configured
+- JWT secret is 32+ characters
+- CORS configured with actual frontend URLs
+- HTTPS enabled (automatic on Render)
+- Health check endpoint working
+- Rate limiting active
+- Input validation enabled
+- Winston logging configured
+- Graceful shutdown implemented
 
 ---
 
 ## BACKUP & ROLLBACK
 
 ### Create Manual Backup
-```bash
-# In Render Dashboard
+In Render Dashboard:
 1. Go to your service
 2. Click "Manual Deploy"
 3. Save the commit SHA for rollback
-```
 
 ### Rollback to Previous Version
-```bash
-# In Render Dashboard
+In Render Dashboard:
 1. Go to "Deploys" tab
 2. Find the working deployment
 3. Click "Redeploy"
-```
 
 ---
 
@@ -457,14 +453,14 @@ Before going to production:
 
 ## NEXT STEPS
 
-1. ✅ Deploy backend to Render (you're here)
+1. Deploy backend to Render (you're here)
 2. Deploy frontend to Vercel/Netlify
 3. Deploy admin panel to Vercel/Netlify
 4. Update environment URLs
 5. Set up custom domain
 6. Configure monitoring
 7. Set up automated backups
-8. Launch! 🚀
+8. Launch to production
 
 ---
 
@@ -477,7 +473,6 @@ Before going to production:
 
 ---
 
-**Your GlowNatura backend is production-ready!** 🎉
+**Your GlowNatura backend is production-ready and can be deployed.**
 
 For any deployment issues, check the Render logs and refer to this guide.
-
