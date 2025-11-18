@@ -77,12 +77,11 @@ class BrevoEmailService extends IEmailService {
     await this.send(order.customer.email, subject, html);
   }
 
-  async sendVerificationCode(email, name, code) {
+  async sendVerificationLink(email, name, verificationLink) {
     const subject = 'Verify Your Email - GlowNatura Admin';
     
     // Ensure name is properly passed and not undefined
     const adminName = name || 'Admin';
-    const verificationCode = code || '';
     
     const html = `
       <!DOCTYPE html>
@@ -120,19 +119,20 @@ class BrevoEmailService extends IEmailService {
           .content {
             padding: 30px;
           }
-          .code-box { 
-            background: #f0fdf4; 
-            border: 2px dashed #059669; 
-            padding: 20px; 
-            text-align: center; 
-            margin: 20px 0;
+          .verify-button { 
+            display: inline-block;
+            background: #059669;
+            color: white !important;
+            text-decoration: none;
+            padding: 15px 40px;
             border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 20px 0;
+            text-align: center;
           }
-          .code { 
-            font-size: 32px; 
-            font-weight: bold; 
-            color: #059669; 
-            letter-spacing: 8px;
+          .verify-button:hover {
+            background: #047857;
           }
           .footer {
             background-color: #f9fafb;
@@ -151,12 +151,15 @@ class BrevoEmailService extends IEmailService {
           <div class="content">
             <h2 style="color: #059669; margin-top: 0;">Welcome, ${adminName}!</h2>
             <p>Thank you for registering as an admin for GlowNatura.</p>
-            <p>Your verification code is:</p>
-            <div class="code-box">
-              <div class="code">${verificationCode}</div>
+            <p>Please verify your account by clicking the button below:</p>
+            <div style="text-align: center;">
+              <a href="${verificationLink}" class="verify-button">Verify Email Address</a>
             </div>
-            <p><strong>This code expires in 24 hours.</strong></p>
-            <p>Please enter this code in the admin panel to verify your email address and activate your account.</p>
+            <p><strong>This link expires in 24 hours.</strong></p>
+            <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+              If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="${verificationLink}" style="color: #059669; word-break: break-all;">${verificationLink}</a>
+            </p>
             <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">If you didn't create an account, please ignore this email.</p>
           </div>
           <div class="footer">
@@ -168,7 +171,7 @@ class BrevoEmailService extends IEmailService {
       </html>
     `;
     
-    logger.info('Sending verification code email', { email, name: adminName });
+    logger.info('Sending verification link email', { email, name: adminName });
     await this.send(email, subject, html);
   }
 

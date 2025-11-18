@@ -11,13 +11,15 @@ class AuthController {
    * @param {LoginUseCase} loginUseCase
    * @param {RegisterAdminUseCase} registerUseCase
    * @param {VerifyEmailUseCase} verifyEmailUseCase
+   * @param {VerifyEmailWithTokenUseCase} verifyEmailWithTokenUseCase
    * @param {ResetPasswordUseCase} resetPasswordUseCase
    * @param {ResendVerificationUseCase} resendVerificationUseCase
    */
-  constructor(loginUseCase, registerUseCase, verifyEmailUseCase, resetPasswordUseCase, resendVerificationUseCase) {
+  constructor(loginUseCase, registerUseCase, verifyEmailUseCase, verifyEmailWithTokenUseCase, resetPasswordUseCase, resendVerificationUseCase) {
     this.loginUseCase = loginUseCase;
     this.registerUseCase = registerUseCase;
     this.verifyEmailUseCase = verifyEmailUseCase;
+    this.verifyEmailWithTokenUseCase = verifyEmailWithTokenUseCase;
     this.resetPasswordUseCase = resetPasswordUseCase;
     this.resendVerificationUseCase = resendVerificationUseCase;
   }
@@ -49,12 +51,26 @@ class AuthController {
   }
 
   /**
-   * Verify email
+   * Verify email (POST - with code, for backward compatibility)
    * POST /api/auth/verify-email
    */
   async verifyEmail(req, res, next) {
     try {
       const result = await this.verifyEmailUseCase.execute(req.body);
+      res.json(Response.success(result));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify email with token (GET - with JWT token from link)
+   * GET /api/auth/verify-email?token=xyz
+   */
+  async verifyEmailWithToken(req, res, next) {
+    try {
+      const { token } = req.query;
+      const result = await this.verifyEmailWithTokenUseCase.execute(token);
       res.json(Response.success(result));
     } catch (error) {
       next(error);

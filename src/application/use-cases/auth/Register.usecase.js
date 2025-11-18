@@ -6,6 +6,8 @@
 
 const { ValidationError, ConflictError } = require('../../../shared/errors/AppError');
 const logger = require('../../../config/logger');
+const jwt = require('jsonwebtoken');
+const Config = require('../../../infrastructure/config');
 
 class RegisterAdminUseCase {
   /**
@@ -40,24 +42,32 @@ class RegisterAdminUseCase {
       throw new ConflictError('Email already registered');
     }
 
-    // Generate verification code
-    const verificationCode = this.generateVerificationCode();
-    const verificationCodeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Create admin
+    // Create admin (unverified)
     const admin = await this.adminRepository.create({
       name,
       email,
       password, // Will be hashed by model middleware
       role,
-      verificationCode,
-      verificationCodeExpires,
       isActive: false, // Require verification
     });
 
-    // Send verification email
+    // Generate JWT verification token (valid for 24 hours)
+    const verificationToken = jwt.sign(
+      { 
+        adminId: admin._id.toString(),
+        email: admin.email,
+        purpose: 'email_verification'
+      },
+      Config.jwt.secret,
+      { expiresIn: '24h' }
+    );
+
+    // Build verification link
+    const verificationLink = `${Config.urls.admin}/verify-email?token=${verificationToken}`;
+
+    // Send verification email with link
     try {
-      await this.emailService.sendVerificationCode(email, name, verificationCode);
+      await this.emailService.sendVerificationLink(email, name, verificationLink);
     } catch (error) {
       logger.error('Failed to send verification email', { 
         email, 
@@ -76,11 +86,10 @@ class RegisterAdminUseCase {
     // Return admin without sensitive data
     const adminData = admin.toObject();
     delete adminData.password;
-    delete adminData.verificationCode;
 
     return {
       admin: adminData,
-      message: 'Account created successfully. Please check your email for the verification code to activate your account.'
+      message: 'Account created successfully! Please check your email and click the verification link to activate your account.'
     };
   }
 
@@ -105,14 +114,6 @@ class RegisterAdminUseCase {
     if (dto.role && !validRoles.includes(dto.role)) {
       throw new ValidationError('Invalid role');
     }
-  }
-
-  /**
-   * Generate 6-digit verification code
-   * @private
-   */
-  generateVerificationCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }
 

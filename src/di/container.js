@@ -41,6 +41,7 @@ const ManageReviewsUseCase = require('../application/use-cases/reviews/ManageRev
 const LoginUseCase = require('../application/use-cases/auth/Login.usecase');
 const RegisterAdminUseCase = require('../application/use-cases/auth/Register.usecase');
 const VerifyEmailUseCase = require('../application/use-cases/auth/VerifyEmail.usecase');
+const VerifyEmailWithTokenUseCase = require('../application/use-cases/auth/VerifyEmailWithToken.usecase');
 const ResetPasswordUseCase = require('../application/use-cases/auth/ResetPassword.usecase');
 const ResendVerificationUseCase = require('../application/use-cases/auth/ResendVerification.usecase');
 
@@ -331,6 +332,15 @@ class Container {
     return this.instances.verifyEmailUseCase;
   }
 
+  getVerifyEmailWithTokenUseCase() {
+    if (!this.instances.verifyEmailWithTokenUseCase) {
+      this.instances.verifyEmailWithTokenUseCase = new VerifyEmailWithTokenUseCase(
+        this.getAdminRepository()
+      );
+    }
+    return this.instances.verifyEmailWithTokenUseCase;
+  }
+
   getResetPasswordUseCase() {
     if (!this.instances.resetPasswordUseCase) {
       this.instances.resetPasswordUseCase = new ResetPasswordUseCase(
@@ -409,6 +419,7 @@ class Container {
         this.getLoginUseCase(),
         this.getRegisterUseCase(),
         this.getVerifyEmailUseCase(),
+        this.getVerifyEmailWithTokenUseCase(),
         this.getResetPasswordUseCase(),
         this.getResendVerificationUseCase()
       );

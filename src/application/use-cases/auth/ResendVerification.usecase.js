@@ -6,6 +6,8 @@
 
 const { BadRequestError, NotFoundError } = require('../../../shared/errors/AppError');
 const logger = require('../../../config/logger');
+const jwt = require('jsonwebtoken');
+const Config = require('../../../infrastructure/config');
 
 class ResendVerificationUseCase {
   /**
@@ -38,21 +40,25 @@ class ResendVerificationUseCase {
       throw new BadRequestError('Account is already verified');
     }
 
-    // Generate new verification code
-    const verificationCode = this.generateVerificationCode();
-    const verificationCodeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Generate JWT verification token (valid for 24 hours)
+    const verificationToken = jwt.sign(
+      { 
+        adminId: admin._id.toString(),
+        email: admin.email,
+        purpose: 'email_verification'
+      },
+      Config.jwt.secret,
+      { expiresIn: '24h' }
+    );
 
-    // Update admin with new code
-    await this.adminRepository.update(admin._id, {
-      verificationCode,
-      verificationCodeExpires
-    });
+    // Build verification link
+    const verificationLink = `${Config.urls.admin}/verify-email?token=${verificationToken}`;
 
-    // Send verification email
+    // Send verification email with link
     try {
-      await this.emailService.sendVerificationCode(email, admin.name, verificationCode);
+      await this.emailService.sendVerificationLink(email, admin.name, verificationLink);
       
-      logger.info('Verification code resent', { email, adminId: admin._id });
+      logger.info('Verification link resent', { email, adminId: admin._id });
     } catch (error) {
       logger.error('Failed to resend verification email', { 
         email, 
@@ -62,17 +68,9 @@ class ResendVerificationUseCase {
     }
 
     return {
-      message: 'Verification code has been resent to your email',
+      message: 'Verification link has been resent to your email',
       email: admin.email
     };
-  }
-
-  /**
-   * Generate 6-digit verification code
-   * @private
-   */
-  generateVerificationCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }
 
