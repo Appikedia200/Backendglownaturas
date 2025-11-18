@@ -30,6 +30,14 @@ class MongoProductRepository extends IProductRepository {
       featured,
       sortBy = 'createdAt',
       sortOrder = 'desc',
+      // Jewelry-specific filters
+      jewelryMaterial,
+      jewelryPurity,
+      jewelryType,
+      jewelryGender,
+      stoneType,
+      minPrice,
+      maxPrice,
     } = options;
 
     // Build query
@@ -53,6 +61,34 @@ class MongoProductRepository extends IProductRepository {
     
     if (featured !== undefined) {
       query.featured = featured;
+    }
+
+    // Jewelry-specific filters
+    if (jewelryMaterial) {
+      query['jewelry.material'] = jewelryMaterial;
+    }
+
+    if (jewelryPurity) {
+      query['jewelry.purity'] = jewelryPurity;
+    }
+
+    if (jewelryType) {
+      query['jewelry.type'] = jewelryType;
+    }
+
+    if (jewelryGender) {
+      query['jewelry.gender'] = jewelryGender;
+    }
+
+    if (stoneType) {
+      query['jewelry.stone.type'] = stoneType;
+    }
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = parseFloat(minPrice);
+      if (maxPrice) query.price.$lte = parseFloat(maxPrice);
     }
 
     // Execute query with pagination
@@ -124,6 +160,34 @@ class MongoProductRepository extends IProductRepository {
     }
     
     return product;
+  }
+
+  /**
+   * Get available jewelry filter options
+   * @returns {Promise<Object>}
+   */
+  async getJewelryFilters() {
+    const filters = await Product.aggregate([
+      { $match: { 'jewelry': { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: null,
+          materials: { $addToSet: '$jewelry.material' },
+          purities: { $addToSet: '$jewelry.purity' },
+          types: { $addToSet: '$jewelry.type' },
+          genders: { $addToSet: '$jewelry.gender' },
+          stoneTypes: { $addToSet: '$jewelry.stone.type' }
+        }
+      }
+    ]);
+
+    return filters[0] || {
+      materials: [],
+      purities: [],
+      types: [],
+      genders: [],
+      stoneTypes: []
+    };
   }
 }
 

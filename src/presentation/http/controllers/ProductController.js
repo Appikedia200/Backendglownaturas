@@ -11,12 +11,14 @@ class ProductController {
    * @param {UpdateProductUseCase} updateProductUseCase
    * @param {DeleteProductUseCase} deleteProductUseCase
    * @param {GetProductsUseCase} getProductsUseCase
+   * @param {GetJewelryFiltersUseCase} getJewelryFiltersUseCase
    */
-  constructor(createProductUseCase, updateProductUseCase, deleteProductUseCase, getProductsUseCase) {
+  constructor(createProductUseCase, updateProductUseCase, deleteProductUseCase, getProductsUseCase, getJewelryFiltersUseCase) {
     this.createProductUseCase = createProductUseCase;
     this.updateProductUseCase = updateProductUseCase;
     this.deleteProductUseCase = deleteProductUseCase;
     this.getProductsUseCase = getProductsUseCase;
+    this.getJewelryFiltersUseCase = getJewelryFiltersUseCase;
   }
 
   /**
@@ -93,6 +95,19 @@ class ProductController {
       const threshold = parseInt(req.query.threshold) || 10;
       const products = await this.getProductsUseCase.executeLowStock(threshold);
       res.json(Response.success(products));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get jewelry filter options
+   * GET /api/products/jewelry/filters
+   */
+  async getJewelryFilters(req, res, next) {
+    try {
+      const filters = await this.getJewelryFiltersUseCase.execute();
+      res.json(Response.success(filters));
     } catch (error) {
       next(error);
     }

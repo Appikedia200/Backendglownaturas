@@ -31,6 +31,14 @@ class GetProductsUseCase {
       featured: query.featured,
       sortBy: query.sortBy || 'createdAt',
       sortOrder: query.sortOrder || 'desc',
+      // Jewelry-specific filters
+      jewelryMaterial: query.jewelryMaterial,
+      jewelryPurity: query.jewelryPurity,
+      jewelryType: query.jewelryType,
+      jewelryGender: query.jewelryGender,
+      stoneType: query.stoneType,
+      minPrice: query.minPrice,
+      maxPrice: query.maxPrice,
     };
 
     const { products, total } = await this.productRepository.findAll(filters, options);

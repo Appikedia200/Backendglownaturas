@@ -11,10 +11,11 @@ const {
 
 // Public routes
 router.get('/', validateGetProducts, (req, res, next) => container.getProductController().getAll(req, res, next));
+router.get('/jewelry/filters', (req, res, next) => container.getProductController().getJewelryFilters(req, res, next));
 router.get('/low-stock', protect, (req, res, next) => container.getProductController().getLowStock(req, res, next));
 router.get('/:id', validateProductId, (req, res, next) => container.getProductController().getOne(req, res, next));
 
-// Protected routes
+// Protected routes (jewelry validation integrated in validateCreateProduct/validateUpdateProduct)
 router.post('/', protect, validateCreateProduct, (req, res, next) => container.getProductController().create(req, res, next));
 router.put('/:id', protect, validateUpdateProduct, (req, res, next) => container.getProductController().update(req, res, next));
 router.delete('/:id', protect, validateProductId, (req, res, next) => container.getProductController().delete(req, res, next));

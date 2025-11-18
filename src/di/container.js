@@ -25,6 +25,7 @@ const CreateProductUseCase = require('../application/use-cases/products/CreatePr
 const UpdateProductUseCase = require('../application/use-cases/products/UpdateProduct.usecase');
 const DeleteProductUseCase = require('../application/use-cases/products/DeleteProduct.usecase');
 const GetProductsUseCase = require('../application/use-cases/products/GetProducts.usecase');
+const GetJewelryFiltersUseCase = require('../application/use-cases/products/GetJewelryFilters.usecase');
 
 // Use Cases - Orders
 const CreateOrderUseCase = require('../application/use-cases/orders/CreateOrder.usecase');
@@ -151,6 +152,15 @@ class Container {
     return this.instances.getProductsUseCase;
   }
 
+  getGetJewelryFiltersUseCase() {
+    if (!this.instances.getJewelryFiltersUseCase) {
+      this.instances.getJewelryFiltersUseCase = new GetJewelryFiltersUseCase(
+        this.getProductRepository()
+      );
+    }
+    return this.instances.getJewelryFiltersUseCase;
+  }
+
   // ========== USE CASES - ORDERS ==========
   getCreateOrderUseCase() {
     if (!this.instances.createOrderUseCase) {
@@ -218,7 +228,8 @@ class Container {
         this.getCreateProductUseCase(),
         this.getUpdateProductUseCase(),
         this.getDeleteProductUseCase(),
-        this.getGetProductsUseCase()
+        this.getGetProductsUseCase(),
+        this.getGetJewelryFiltersUseCase()
       );
     }
     return this.instances.productController;

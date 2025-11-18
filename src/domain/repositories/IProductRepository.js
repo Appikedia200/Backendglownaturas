@@ -89,6 +89,14 @@ class IProductRepository {
   async updateStock(id, quantity) {
     throw new Error('Method not implemented: updateStock');
   }
+
+  /**
+   * Get available jewelry filter options
+   * @returns {Promise<Object>}
+   */
+  async getJewelryFilters() {
+    throw new Error('Method not implemented: getJewelryFilters');
+  }
 }
 
 module.exports = IProductRepository;

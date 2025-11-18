@@ -73,6 +73,40 @@ const validateCreateProduct = [
     .optional()
     .isBoolean().withMessage('Track inventory must be true or false'),
   
+  // Jewelry-specific fields (optional - only for jewelry products)
+  body('jewelry.material')
+    .optional()
+    .isIn(['gold', 'silver', 'platinum', 'white-gold', 'rose-gold', 'titanium', 'stainless-steel', 'brass', 'copper'])
+    .withMessage('Invalid jewelry material'),
+  
+  body('jewelry.purity')
+    .optional()
+    .isIn(['24k', '22k', '18k', '14k', '10k', '925-sterling', '999-fine', '958-britannia', 'other'])
+    .withMessage('Invalid jewelry purity'),
+  
+  body('jewelry.metalWeight.value')
+    .optional()
+    .isFloat({ min: 0 }).withMessage('Metal weight must be non-negative'),
+  
+  body('jewelry.stone.type')
+    .optional()
+    .isIn(['diamond', 'ruby', 'sapphire', 'emerald', 'pearl', 'amethyst', 'topaz', 'garnet', 'opal', 'turquoise', 'cubic-zirconia', 'moissanite', 'none'])
+    .withMessage('Invalid stone type'),
+  
+  body('jewelry.stone.caratWeight')
+    .optional()
+    .isFloat({ min: 0 }).withMessage('Stone carat weight must be non-negative'),
+  
+  body('jewelry.gender')
+    .optional()
+    .isIn(['men', 'women', 'unisex', 'kids'])
+    .withMessage('Invalid gender'),
+  
+  body('jewelry.type')
+    .optional()
+    .isIn(['ring', 'necklace', 'bracelet', 'earrings', 'pendant', 'chain', 'bangle', 'anklet', 'brooch', 'cufflinks', 'nose-ring', 'toe-ring'])
+    .withMessage('Invalid jewelry type'),
+  
   validate
 ];
 
@@ -113,6 +147,27 @@ const validateUpdateProduct = [
     .optional()
     .isIn(['draft', 'published', 'archived']).withMessage('Invalid status value'),
   
+  // Jewelry fields (optional for updates)
+  body('jewelry.material')
+    .optional()
+    .isIn(['gold', 'silver', 'platinum', 'white-gold', 'rose-gold', 'titanium', 'stainless-steel', 'brass', 'copper'])
+    .withMessage('Invalid jewelry material'),
+  
+  body('jewelry.purity')
+    .optional()
+    .isIn(['24k', '22k', '18k', '14k', '10k', '925-sterling', '999-fine', '958-britannia', 'other'])
+    .withMessage('Invalid jewelry purity'),
+  
+  body('jewelry.gender')
+    .optional()
+    .isIn(['men', 'women', 'unisex', 'kids'])
+    .withMessage('Invalid gender'),
+  
+  body('jewelry.type')
+    .optional()
+    .isIn(['ring', 'necklace', 'bracelet', 'earrings', 'pendant', 'chain', 'bangle', 'anklet', 'brooch', 'cufflinks', 'nose-ring', 'toe-ring'])
+    .withMessage('Invalid jewelry type'),
+  
   validate
 ];
 
@@ -144,6 +199,40 @@ const validateGetProducts = [
   query('featured')
     .optional()
     .isBoolean().withMessage('Featured must be true or false'),
+  
+  // Jewelry filter queries
+  query('jewelryMaterial')
+    .optional()
+    .isIn(['gold', 'silver', 'platinum', 'white-gold', 'rose-gold', 'titanium', 'stainless-steel', 'brass', 'copper'])
+    .withMessage('Invalid jewelry material filter'),
+  
+  query('jewelryPurity')
+    .optional()
+    .isIn(['24k', '22k', '18k', '14k', '10k', '925-sterling', '999-fine', '958-britannia', 'other'])
+    .withMessage('Invalid jewelry purity filter'),
+  
+  query('jewelryType')
+    .optional()
+    .isIn(['ring', 'necklace', 'bracelet', 'earrings', 'pendant', 'chain', 'bangle', 'anklet', 'brooch', 'cufflinks', 'nose-ring', 'toe-ring'])
+    .withMessage('Invalid jewelry type filter'),
+  
+  query('jewelryGender')
+    .optional()
+    .isIn(['men', 'women', 'unisex', 'kids'])
+    .withMessage('Invalid jewelry gender filter'),
+  
+  query('stoneType')
+    .optional()
+    .isIn(['diamond', 'ruby', 'sapphire', 'emerald', 'pearl', 'amethyst', 'topaz', 'garnet', 'opal', 'turquoise', 'cubic-zirconia', 'moissanite', 'none'])
+    .withMessage('Invalid stone type filter'),
+  
+  query('minPrice')
+    .optional()
+    .isFloat({ min: 0 }).withMessage('Min price must be non-negative'),
+  
+  query('maxPrice')
+    .optional()
+    .isFloat({ min: 0 }).withMessage('Max price must be non-negative'),
   
   validate
 ];

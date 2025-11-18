@@ -118,8 +118,8 @@ const productSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'draft'],
-    default: 'active'
+    enum: ['draft', 'published', 'archived'],
+    default: 'published'
   },
   viewCount: {
     type: Number,
@@ -146,12 +146,71 @@ const productSchema = new mongoose.Schema({
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin'
+  },
+  // Jewelry-specific fields (for jewelry products only)
+  jewelry: {
+    material: {
+      type: String,
+      enum: ['gold', 'silver', 'platinum', 'white-gold', 'rose-gold', 'titanium', 'stainless-steel', 'brass', 'copper'],
+      required: false
+    },
+    purity: {
+      type: String,
+      enum: ['24k', '22k', '18k', '14k', '10k', '925-sterling', '999-fine', '958-britannia', 'other'],
+      required: false
+    },
+    metalWeight: {
+      value: { type: Number, min: 0 },
+      unit: { type: String, enum: ['grams', 'ounces', 'carats'], default: 'grams' }
+    },
+    stone: {
+      type: {
+        type: String,
+        enum: ['diamond', 'ruby', 'sapphire', 'emerald', 'pearl', 'amethyst', 'topaz', 'garnet', 'opal', 'turquoise', 'cubic-zirconia', 'moissanite', 'none']
+      },
+      caratWeight: { type: Number, min: 0 },
+      clarity: {
+        type: String,
+        enum: ['FL', 'IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1', 'I2', 'I3', 'N/A']
+      },
+      color: {
+        type: String,
+        enum: ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'fancy', 'N/A']
+      },
+      cut: {
+        type: String,
+        enum: ['excellent', 'very-good', 'good', 'fair', 'poor', 'N/A']
+      }
+    },
+    size: {
+      type: { type: String, enum: ['ring-size', 'length', 'diameter', 'adjustable', 'one-size'] },
+      value: { type: String },
+      unit: { type: String, enum: ['US', 'UK', 'EU', 'mm', 'cm', 'inches'] }
+    },
+    certification: {
+      available: { type: Boolean, default: false },
+      issuedBy: { type: String },
+      certificateNumber: { type: String }
+    },
+    gender: {
+      type: String,
+      enum: ['men', 'women', 'unisex', 'kids'],
+      required: false
+    },
+    type: {
+      type: String,
+      enum: ['ring', 'necklace', 'bracelet', 'earrings', 'pendant', 'chain', 'bangle', 'anklet', 'brooch', 'cufflinks', 'nose-ring', 'toe-ring'],
+      required: false
+    }
   }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
+
+// Indexes for performance
+productSchema.index({ 'jewelry.material': 1, 'jewelry.purity': 1, 'jewelry.stone.type': 1, 'jewelry.gender': 1, 'jewelry.type': 1 });
 
 productSchema.pre('save', function(next) {
   if (this.isModified('name')) {
