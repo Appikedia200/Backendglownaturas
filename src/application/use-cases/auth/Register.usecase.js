@@ -57,10 +57,11 @@ class RegisterAdminUseCase {
 
     // Send verification email
     try {
-      await this.emailService.sendVerificationCode(email, verificationCode);
+      await this.emailService.sendVerificationCode(email, name, verificationCode);
     } catch (error) {
       logger.error('Failed to send verification email', { 
         email, 
+        adminName: name,
         error: error.message 
       });
       // Don't fail registration if email fails
