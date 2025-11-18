@@ -12,12 +12,14 @@ class AuthController {
    * @param {RegisterAdminUseCase} registerUseCase
    * @param {VerifyEmailUseCase} verifyEmailUseCase
    * @param {ResetPasswordUseCase} resetPasswordUseCase
+   * @param {ResendVerificationUseCase} resendVerificationUseCase
    */
-  constructor(loginUseCase, registerUseCase, verifyEmailUseCase, resetPasswordUseCase) {
+  constructor(loginUseCase, registerUseCase, verifyEmailUseCase, resetPasswordUseCase, resendVerificationUseCase) {
     this.loginUseCase = loginUseCase;
     this.registerUseCase = registerUseCase;
     this.verifyEmailUseCase = verifyEmailUseCase;
     this.resetPasswordUseCase = resetPasswordUseCase;
+    this.resendVerificationUseCase = resendVerificationUseCase;
   }
 
   /**
@@ -79,6 +81,19 @@ class AuthController {
   async resetPassword(req, res, next) {
     try {
       const result = await this.resetPasswordUseCase.executeReset(req.body);
+      res.json(Response.success(result));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Resend verification code
+   * POST /api/auth/resend-verification
+   */
+  async resendVerification(req, res, next) {
+    try {
+      const result = await this.resendVerificationUseCase.execute(req.body);
       res.json(Response.success(result));
     } catch (error) {
       next(error);

@@ -80,7 +80,7 @@ class RegisterAdminUseCase {
 
     return {
       admin: adminData,
-      message: 'Registration successful. Please check your email for verification code.'
+      message: 'Account created successfully. Please check your email for the verification code to activate your account.'
     };
   }
 

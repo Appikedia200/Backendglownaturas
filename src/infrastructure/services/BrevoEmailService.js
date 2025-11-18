@@ -358,7 +358,7 @@ class BrevoEmailService extends IEmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>✅ Order Confirmed!</h1>
+            <h1>Order Confirmed</h1>
           </div>
           <div class="content">
             <h2 style="color: #059669; margin-top: 0;">Hi ${customerName},</h2>
@@ -386,7 +386,7 @@ class BrevoEmailService extends IEmailService {
             </div>
             
             <p style="margin-top: 30px; padding: 15px; background-color: #f0fdf4; border-left: 4px solid #059669; color: #047857;">
-              <strong>💬 Need Help?</strong><br>
+              <strong>Need Help?</strong><br>
               Contact us on WhatsApp or check your order status in your account.
             </p>
             
@@ -491,7 +491,7 @@ class BrevoEmailService extends IEmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>📦 Order Status Update</h1>
+            <h1>Order Status Update</h1>
           </div>
           <div class="content">
             <h2 style="color: ${statusColor}; margin-top: 0;">Hi ${customerName},</h2>
