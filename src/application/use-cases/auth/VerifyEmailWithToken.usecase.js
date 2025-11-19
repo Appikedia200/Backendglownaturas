@@ -51,15 +51,15 @@ class VerifyEmailWithTokenUseCase {
     }
 
     // Check if already verified
-    if (admin.isActive) {
+    if (admin.emailVerified) {
       throw new BadRequestError('Account is already verified');
     }
 
     // Activate admin account
     await this.adminRepository.update(admin._id, {
-      isActive: true,
-      verificationCode: null,
-      verificationCodeExpires: null
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpires: null
     });
 
     logger.info('Admin email verified successfully', { 
@@ -81,8 +81,8 @@ class VerifyEmailWithTokenUseCase {
     // Return admin data and login token
     const adminData = admin.toObject();
     delete adminData.password;
-    delete adminData.verificationCode;
-    delete adminData.verificationCodeExpires;
+    delete adminData.emailVerificationToken;
+    delete adminData.emailVerificationExpires;
 
     return {
       admin: adminData,

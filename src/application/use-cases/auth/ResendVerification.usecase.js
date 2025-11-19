@@ -36,7 +36,7 @@ class ResendVerificationUseCase {
     }
 
     // Check if already verified
-    if (admin.isActive) {
+    if (admin.emailVerified) {
       throw new BadRequestError('Account is already verified');
     }
 
