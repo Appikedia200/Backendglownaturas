@@ -6,7 +6,7 @@ services:
     region: ohio # Change to your preferred region
     plan: free # Options: free, starter, standard, pro
     branch: main # Change to your default branch if different
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /health
     
