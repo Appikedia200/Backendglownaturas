@@ -115,7 +115,7 @@ if (process.env.NODE_ENV !== 'test') {
   }));
 }
 
-// Health check endpoint
+// Health check endpoint with MongoDB status
 app.get('/health', (req, res) => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   const isHealthy = mongoose.connection.readyState === 1;
