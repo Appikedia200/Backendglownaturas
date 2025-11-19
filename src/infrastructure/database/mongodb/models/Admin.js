@@ -26,6 +26,11 @@ const adminSchema = new mongoose.Schema({
     minlength: 8,
     select: false
   },
+  role: {
+    type: String,
+    enum: ['admin', 'superadmin'],
+    default: 'admin'
+  },
   emailVerified: {
     type: Boolean,
     default: false

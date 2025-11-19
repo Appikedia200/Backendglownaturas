@@ -34,14 +34,14 @@ class VerifyEmailUseCase {
     }
 
     // Activate admin account
-    admin.isActive = true;
-    admin.verificationCode = undefined;
-    admin.verificationCodeExpires = undefined;
+    admin.emailVerified = true;
+    admin.emailVerificationToken = undefined;
+    admin.emailVerificationExpires = undefined;
     
     await this.adminRepository.update(admin._id, {
-      isActive: true,
-      verificationCode: null,
-      verificationCodeExpires: null
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpires: null
     });
 
     logger.info('Email verified successfully', { 

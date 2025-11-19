@@ -48,7 +48,7 @@ class RegisterAdminUseCase {
       email,
       password, // Will be hashed by model middleware
       role,
-      isActive: false, // Require verification
+      emailVerified: false, // Require verification
     });
 
     // Generate JWT verification token (valid for 24 hours)

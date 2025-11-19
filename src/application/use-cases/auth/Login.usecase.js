@@ -36,10 +36,10 @@ class LoginUseCase {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    // Check if admin is active
-    if (!admin.isActive) {
-      logger.warn('Login attempt for inactive admin', { email });
-      throw new UnauthorizedError('Account is deactivated');
+    // Check if admin email is verified
+    if (!admin.emailVerified) {
+      logger.warn('Login attempt for unverified admin', { email });
+      throw new UnauthorizedError('Please verify your email before logging in');
     }
 
     // Verify password
@@ -50,7 +50,7 @@ class LoginUseCase {
       admin.failedLoginAttempts += 1;
       
       if (admin.failedLoginAttempts >= 5) {
-        admin.isActive = false;
+        admin.emailVerified = false;
         logger.warn('Admin account locked due to failed attempts', { email });
         await admin.save();
         throw new UnauthorizedError('Account locked due to multiple failed login attempts');
