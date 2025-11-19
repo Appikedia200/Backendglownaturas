@@ -8,6 +8,7 @@ require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const mongoose = require('mongoose');
 
 // Configuration
 const Config = require('./infrastructure/config');
@@ -114,16 +115,22 @@ if (process.env.NODE_ENV !== 'test') {
   }));
 }
 
-// Health check endpoint
+// Health check endpoint with MongoDB status
 app.get('/health', (req, res) => {
-  res.json({
-    success: true,
+  const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  const isHealthy = mongoose.connection.readyState === 1;
+  
+  res.status(isHealthy ? 200 : 503).json({
+    success: isHealthy,
     data: {
-      status: 'healthy',
+      status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV,
       version: '5.1.0',
+      dependencies: {
+        mongodb: mongoStatus
+      }
     }
   });
 });
