@@ -10,7 +10,7 @@ const { NotFoundError } = require('../../../../shared/errors/AppError');
 
 class MongoAdminRepository extends IAdminRepository {
   async findByEmail(email) {
-    return await Admin.findOne({ email }).select('+password +twoFactorSecret');
+    return await Admin.findOne({ email }).select('+password');
   }
 
   async findById(id) {
@@ -66,7 +66,7 @@ class MongoAdminRepository extends IAdminRepository {
       query.isActive = filters.isActive;
     }
     
-    return await Admin.find(query).select('-password -twoFactorSecret');
+    return await Admin.find(query).select('-password');
   }
 
   async delete(id) {

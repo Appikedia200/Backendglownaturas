@@ -26,7 +26,7 @@ class RegisterAdminUseCase {
    * @param {string} dto.email
    * @param {string} dto.password
    * @param {string} dto.role - Optional, defaults to 'admin'
-   * @returns {Promise<{admin: Object, verificationCode: string}>}
+   * @returns {Promise<{admin: Object, message: string}>}
    */
   async execute(dto) {
     const { name, email, password, role = 'admin' } = dto;
