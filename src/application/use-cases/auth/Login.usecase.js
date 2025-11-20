@@ -63,10 +63,9 @@ class LoginUseCase {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    // Reset login attempts on successful login using model method
-    await admin.resetLoginAttempts();
-    
-    // Update last login
+    // Reset login attempts and update last login in one operation
+    admin.loginAttempts = 0;
+    admin.lockUntil = undefined;
     admin.lastLogin = new Date();
     await admin.save();
 
