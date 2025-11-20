@@ -26,27 +26,36 @@ class ManageMediaUseCase {
       throw new ValidationError('No file provided');
     }
 
+    // Validate file type (images only)
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new ValidationError('Only image files (JPEG, PNG, GIF, WebP) are allowed');
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new ValidationError('File size must be less than 5MB');
+    }
+
     // Upload to storage (Cloudinary)
     const uploadResult = await this.storageService.upload(file, {
       folder: 'glownatura',
-      resource_type: 'auto'
+      resource_type: 'image'
     });
 
-    // Create media record
+    // Create media record with flat structure matching model
     const media = await this.mediaRepository.create({
-      filename: file.originalname,
+      filename: uploadResult.original_filename || file.originalname,
+      originalName: file.originalname,
+      altText: altText || '',
+      cloudinaryUrl: uploadResult.secure_url,
+      cloudinaryPublicId: uploadResult.public_id,
+      cloudinaryFolder: 'glownatura',
+      fileSize: file.size,
       mimeType: file.mimetype,
-      size: file.size,
-      type,
-      altText,
-      cloudinary: {
-        publicId: uploadResult.public_id,
-        url: uploadResult.secure_url,
-        format: uploadResult.format,
-        width: uploadResult.width,
-        height: uploadResult.height,
-        bytes: uploadResult.bytes
-      },
+      width: uploadResult.width,
+      height: uploadResult.height,
       uploadedBy
     });
 
@@ -98,8 +107,16 @@ class ManageMediaUseCase {
     const media = await this.mediaRepository.findById(id);
     
     // Delete from storage (Cloudinary)
-    if (media.cloudinary?.publicId) {
-      await this.storageService.delete(media.cloudinary.publicId);
+    if (media.cloudinaryPublicId) {
+      try {
+        await this.storageService.delete(media.cloudinaryPublicId);
+      } catch (error) {
+        logger.error('Failed to delete from Cloudinary', { 
+          error: error.message,
+          publicId: media.cloudinaryPublicId 
+        });
+        // Continue to delete from database even if Cloudinary deletion fails
+      }
     }
 
     // Delete from database
@@ -107,7 +124,7 @@ class ManageMediaUseCase {
     
     logger.info('Media deleted', { 
       mediaId: id,
-      publicId: media.cloudinary?.publicId 
+      publicId: media.cloudinaryPublicId 
     });
 
     return { message: 'Media deleted successfully' };
