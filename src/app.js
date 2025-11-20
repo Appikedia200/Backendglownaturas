@@ -39,6 +39,9 @@ const logger = require('./config/logger');
 
 const app = express();
 
+// CORS - MUST be before Helmet!
+app.use(corsMiddleware);
+
 // Enhanced Helmet configuration for production security
 app.use(helmet({
   contentSecurityPolicy: {
@@ -61,11 +64,9 @@ app.use(helmet({
   xssFilter: true,
   referrerPolicy: {
     policy: 'strict-origin-when-cross-origin'
-  }
+  },
+  crossOriginResourcePolicy: false // Don't block CORS
 }));
-
-// CORS
-app.use(corsMiddleware);
 
 // Sanitize data
 app.use(sanitizeData);
