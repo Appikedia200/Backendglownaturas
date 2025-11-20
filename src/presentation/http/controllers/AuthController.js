@@ -122,7 +122,17 @@ class AuthController {
    */
   async getMe(req, res, next) {
     try {
-      res.json(Response.success({ admin: req.admin }));
+      // Return admin data without sensitive fields
+      const adminData = req.admin.toObject();
+      delete adminData.password;
+      delete adminData.emailVerificationToken;
+      delete adminData.emailVerificationExpires;
+      delete adminData.passwordResetToken;
+      delete adminData.passwordResetExpires;
+      delete adminData.loginAttempts;
+      delete adminData.lockUntil;
+      
+      res.json(Response.success(adminData));
     } catch (error) {
       next(error);
     }
