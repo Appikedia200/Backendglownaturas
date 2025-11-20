@@ -56,9 +56,9 @@ services:
       # Frontend URLs - Update these after deployment
       - key: FRONTEND_URL
         value: https://your-frontend.vercel.app # Update with your frontend URL
-      
+
       - key: ADMIN_URL
-        value: https://your-admin.vercel.app # Update with your admin URL
+        value: https://admin.glownaturas.com # Admin panel URL
     
     # Auto-deploy on push to main branch
     autoDeploy: true
