@@ -22,11 +22,10 @@ class LoginUseCase {
    * @param {Object} dto
    * @param {string} dto.email
    * @param {string} dto.password
-   * @param {string} dto.twoFactorCode - Optional 2FA code
    * @returns {Promise<{admin: Object, token: string}>}
    */
   async execute(dto) {
-    const { email, password, twoFactorCode } = dto;
+    const { email, password } = dto;
 
     // Find admin by email
     const admin = await this.adminRepository.findByEmail(email);
@@ -42,44 +41,32 @@ class LoginUseCase {
       throw new UnauthorizedError('Please verify your email before logging in');
     }
 
+    // Check if account is locked
+    if (admin.isLocked && admin.isLocked()) {
+      logger.warn('Login attempt on locked account', { email });
+      throw new UnauthorizedError('Account is temporarily locked. Please try again later.');
+    }
+
     // Verify password
     const isPasswordValid = await admin.comparePassword(password);
     
     if (!isPasswordValid) {
-      // Increment failed login attempts
-      admin.failedLoginAttempts += 1;
+      // Increment login attempts using model method
+      await admin.incLoginAttempts();
       
-      if (admin.failedLoginAttempts >= 5) {
-        admin.emailVerified = false;
-        logger.warn('Admin account locked due to failed attempts', { email });
-        await admin.save();
-        throw new UnauthorizedError('Account locked due to multiple failed login attempts');
+      logger.warn('Login attempt with invalid password', { email, attempts: admin.loginAttempts + 1 });
+      
+      if (admin.loginAttempts + 1 >= 5) {
+        throw new UnauthorizedError('Account locked due to multiple failed login attempts. Try again in 2 hours.');
       }
       
-      await admin.save();
-      logger.warn('Login attempt with invalid password', { email });
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    // Check 2FA if enabled
-    if (admin.twoFactorEnabled) {
-      if (!twoFactorCode) {
-        return {
-          requiresTwoFactor: true,
-          message: '2FA code required'
-        };
-      }
-
-      const isCodeValid = await admin.verifyTwoFactorCode(twoFactorCode);
-      
-      if (!isCodeValid) {
-        logger.warn('Login attempt with invalid 2FA code', { email });
-        throw new UnauthorizedError('Invalid 2FA code');
-      }
-    }
-
-    // Reset failed attempts on successful login
-    admin.failedLoginAttempts = 0;
+    // Reset login attempts on successful login using model method
+    await admin.resetLoginAttempts();
+    
+    // Update last login
     admin.lastLogin = new Date();
     await admin.save();
 
@@ -95,7 +82,8 @@ class LoginUseCase {
     // Return admin without sensitive data
     const adminData = admin.toObject();
     delete adminData.password;
-    delete adminData.twoFactorSecret;
+    delete adminData.emailVerificationToken;
+    delete adminData.passwordResetToken;
 
     return {
       admin: adminData,
