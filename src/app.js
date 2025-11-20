@@ -42,9 +42,6 @@ const app = express();
 // CORS - MUST be before Helmet!
 app.use(corsMiddleware);
 
-// Handle OPTIONS requests explicitly for CORS preflight
-app.options('*', corsMiddleware);
-
 // Enhanced Helmet configuration for production security
 app.use(helmet({
   contentSecurityPolicy: {
