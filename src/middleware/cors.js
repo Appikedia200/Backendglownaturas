@@ -6,36 +6,48 @@ const corsOptions = {
     const allowedOrigins = [
       process.env.FRONTEND_URL,
       process.env.ADMIN_URL,
+      'https://admin.glownaturas.com', // Hardcoded fallback for admin panel
       'http://localhost:3000',
-      'http://localhost:3001'
-    ].filter(Boolean); // Remove undefined values
+      'http://localhost:3001',
+      'http://localhost:5000'
+    ].filter(Boolean);
     
-    // In development, allow requests with no origin (Postman, etc.)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    if (isDevelopment && !origin) {
+    // Allow requests with no origin (same-origin, Postman, or development tools)
+    if (!origin) {
+      logger.info('CORS: Allowing request with no origin header');
       callback(null, true);
       return;
     }
     
-    // In production, origin must be in whitelist
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Normalize URLs (remove trailing slashes) and check whitelist
+    const isAllowed = allowedOrigins.some(allowed => {
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      const normalizedAllowed = allowed?.replace(/\/$/, '');
+      return normalizedOrigin === normalizedAllowed;
+    });
+    
+    if (isAllowed) {
+      logger.info('CORS: Allowing origin', { origin });
       callback(null, true);
     } else {
-      // SECURITY: Log blocked origin for monitoring without exposing configuration
+      // Log blocked origin with environment details for debugging
       logger.warn('CORS origin blocked', {
-        origin: origin || 'no-origin',
+        origin: origin,
+        allowedOrigins: allowedOrigins,
+        ADMIN_URL_env: process.env.ADMIN_URL,
+        FRONTEND_URL_env: process.env.FRONTEND_URL,
+        NODE_ENV: process.env.NODE_ENV,
         timestamp: new Date().toISOString(),
         event: 'cors_violation'
       });
-      
-      // Return false to block silently (prevents information disclosure)
-      // DO NOT throw error as it exposes internal configuration
       callback(null, false);
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  exposedHeaders: ['Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 };
 
 module.exports = cors(corsOptions);
