@@ -1,10 +1,10 @@
 const rateLimit = require('express-rate-limit');
 const logger = require('../config/logger');
 
-// General API rate limiter (100 requests per 15 minutes)
+// General API rate limiter (500 requests per 15 minutes - increased for admin panel)
 exports.generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 500, // Increased from 100 to 500
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   handler: (req, res) => {
