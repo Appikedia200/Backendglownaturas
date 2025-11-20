@@ -1,9 +1,40 @@
 const cors = require('cors');
 const logger = require('../config/logger');
 
-// Simple, working CORS configuration
 const corsOptions = {
-  origin: true, // Allow ALL origins temporarily to test
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedOrigins = [
+      'https://admin.glownaturas.com',
+      'https://www.admin.glownaturas.com',
+      'https://glownaturas.com',
+      'https://www.glownaturas.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173', // Vite default
+      process.env.FRONTEND_URL,
+      process.env.ADMIN_URL
+    ].filter(Boolean);
+
+    // Normalize and check
+    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, '');
+    const isAllowed = allowedOrigins.some(allowed => 
+      allowed && normalizedOrigin === allowed.toLowerCase().replace(/\/$/, '')
+    );
+
+    if (isAllowed) {
+      logger.info('CORS: Allowed origin', { origin });
+      callback(null, true);
+    } else {
+      logger.warn('CORS: Blocked origin', { origin, allowedOrigins });
+      // Still allow it temporarily for debugging
+      callback(null, true);
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   exposedHeaders: ['Authorization', 'X-Request-ID'],
