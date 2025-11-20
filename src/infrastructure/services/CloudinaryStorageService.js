@@ -25,11 +25,18 @@ class CloudinaryStorageService extends IStorageService {
     });
   }
 
-  async upload(fileBuffer, folder, options = {}) {
+  async upload(file, options = {}) {
     return new Promise((resolve, reject) => {
+      // Handle both buffer and file path
+      const fileData = file.buffer || file.path;
+      
+      if (!fileData) {
+        return reject(new Error('No file data provided'));
+      }
+
       const uploadOptions = {
-        folder: folder || 'glownatura',
-        resource_type: 'auto',
+        folder: options.folder || 'glownatura',
+        resource_type: options.resource_type || 'image',
         ...options,
       };
 
@@ -42,17 +49,22 @@ class CloudinaryStorageService extends IStorageService {
           } else {
             logger.info('File uploaded to Cloudinary', {
               publicId: result.public_id,
-              folder
+              folder: uploadOptions.folder
             });
-            resolve({
-              url: result.secure_url,
-              publicId: result.public_id,
-            });
+            // Return full Cloudinary result
+            resolve(result);
           }
         }
       );
 
-      uploadStream.end(fileBuffer);
+      // Handle buffer or stream
+      if (Buffer.isBuffer(fileData)) {
+        uploadStream.end(fileData);
+      } else {
+        // If file.path is provided, upload from file system
+        const fs = require('fs');
+        fs.createReadStream(fileData).pipe(uploadStream);
+      }
     });
   }
 

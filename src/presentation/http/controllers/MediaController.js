@@ -20,12 +20,25 @@ class MediaController {
    */
   async upload(req, res, next) {
     try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'No image file provided'
+        });
+      }
+      
       const file = req.file;
       const { altText, type } = req.body;
-      const uploadedBy = req.admin.id;
+      const uploadedBy = req.admin._id;
       
       const media = await this.manageMediaUseCase.uploadMedia(file, uploadedBy, altText, type);
-      res.status(201).json(Response.created(media));
+      
+      // Return as array for frontend compatibility
+      res.status(201).json({
+        success: true,
+        count: 1,
+        data: [media]
+      });
     } catch (error) {
       next(error);
     }
