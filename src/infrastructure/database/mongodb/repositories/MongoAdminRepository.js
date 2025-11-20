@@ -50,8 +50,8 @@ class MongoAdminRepository extends IAdminRepository {
   async findByVerificationCode(email, code) {
     return await Admin.findOne({
       email,
-      verificationCode: code,
-      verificationCodeExpires: { $gt: Date.now() }
+      emailVerificationToken: code,
+      emailVerificationExpires: { $gt: Date.now() }
     });
   }
 
@@ -62,8 +62,8 @@ class MongoAdminRepository extends IAdminRepository {
       query.role = filters.role;
     }
     
-    if (filters.isActive !== undefined) {
-      query.isActive = filters.isActive;
+    if (filters.emailVerified !== undefined) {
+      query.emailVerified = filters.emailVerified;
     }
     
     return await Admin.find(query).select('-password');
