@@ -132,6 +132,9 @@ class AuthController {
       delete adminData.loginAttempts;
       delete adminData.lockUntil;
       
+      // Add 'active' field for frontend compatibility (maps to emailVerified)
+      adminData.active = adminData.emailVerified;
+      
       res.json(Response.success(adminData));
     } catch (error) {
       next(error);
