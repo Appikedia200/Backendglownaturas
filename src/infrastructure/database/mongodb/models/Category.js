@@ -30,7 +30,14 @@ const categorySchema = new mongoose.Schema({
     default: 0
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual field for frontend compatibility
+categorySchema.virtual('active').get(function() {
+  return this.isActive;
 });
 
 categorySchema.pre('save', function(next) {

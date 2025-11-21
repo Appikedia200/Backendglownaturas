@@ -67,7 +67,7 @@ const validateCreateProduct = [
   
   body('status')
     .optional()
-    .isIn(['draft', 'published', 'archived']).withMessage('Invalid status value'),
+    .isIn(['active', 'inactive', 'draft']).withMessage('Invalid status value'),
   
   body('trackInventory')
     .optional()
@@ -145,7 +145,7 @@ const validateUpdateProduct = [
   
   body('status')
     .optional()
-    .isIn(['draft', 'published', 'archived']).withMessage('Invalid status value'),
+    .isIn(['active', 'inactive', 'draft']).withMessage('Invalid status value'),
   
   // Jewelry fields (optional for updates)
   body('jewelry.material')
@@ -194,7 +194,7 @@ const validateGetProducts = [
   
   query('status')
     .optional()
-    .isIn(['draft', 'published', 'archived']).withMessage('Invalid status value'),
+    .isIn(['active', 'inactive', 'draft']).withMessage('Invalid status value'),
   
   query('featured')
     .optional()

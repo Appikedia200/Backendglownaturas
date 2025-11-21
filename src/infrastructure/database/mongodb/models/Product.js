@@ -118,8 +118,8 @@ const productSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'published', 'archived'],
-    default: 'published'
+    enum: ['active', 'inactive', 'draft'],
+    default: 'draft'
   },
   viewCount: {
     type: Number,
