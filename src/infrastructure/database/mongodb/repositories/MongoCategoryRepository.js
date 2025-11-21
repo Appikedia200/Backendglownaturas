@@ -10,7 +10,7 @@ const { NotFoundError } = require('../../../../shared/errors/AppError');
  */
 class MongoCategoryRepository extends ICategoryRepository {
   async findById(id) {
-    const category = await Category.findById(id).lean();
+    const category = await Category.findById(id);
     if (!category) {
       throw new NotFoundError('Category');
     }
@@ -18,15 +18,14 @@ class MongoCategoryRepository extends ICategoryRepository {
   }
 
   async findBySlug(slug) {
-    return await Category.findOne({ slug }).lean();
+    return await Category.findOne({ slug });
   }
 
   async findAll(options = {}) {
     const { sortBy = 'name', sortOrder = 'asc' } = options;
     
     return await Category.find()
-      .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
-      .lean();
+      .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 });
   }
 
   async create(categoryData) {
