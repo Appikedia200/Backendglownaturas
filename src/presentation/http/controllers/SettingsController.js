@@ -33,7 +33,7 @@ class SettingsController {
    */
   async updateSettings(req, res, next) {
     try {
-      const updatedBy = req.admin.id;
+      const updatedBy = req.admin._id;
       const settings = await this.manageSettingsUseCase.updateSettings(req.body, updatedBy);
       res.json(Response.success(settings));
     } catch (error) {

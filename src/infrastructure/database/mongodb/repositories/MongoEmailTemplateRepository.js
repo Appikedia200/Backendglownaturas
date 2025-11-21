@@ -18,32 +18,16 @@ class MongoEmailTemplateRepository extends IEmailTemplateRepository {
     if (!template) {
       throw new NotFoundError('Email template');
     }
-    
-    // Transform template to match frontend expectations
-    const obj = template.toObject();
-    obj.type = obj.templateType;
-    return obj;
+    return template;
   }
 
   async findAll() {
-    const templates = await EmailTemplate.find().sort('name');
-    
-    // Transform templates to match frontend expectations
-    return templates.map(template => {
-      const obj = template.toObject();
-      // Map templateType to type for frontend compatibility
-      obj.type = obj.templateType;
-      return obj;
-    });
+    return await EmailTemplate.find().sort('name');
   }
 
   async create(templateData) {
     const template = await EmailTemplate.create(templateData);
-    
-    // Transform template to match frontend expectations
-    const obj = template.toObject();
-    obj.type = obj.templateType;
-    return obj;
+    return template;
   }
 
   async update(id, updates) {
@@ -57,10 +41,7 @@ class MongoEmailTemplateRepository extends IEmailTemplateRepository {
       throw new NotFoundError('Email template');
     }
     
-    // Transform template to match frontend expectations
-    const obj = template.toObject();
-    obj.type = obj.templateType;
-    return obj;
+    return template;
   }
 
   async delete(id) {
