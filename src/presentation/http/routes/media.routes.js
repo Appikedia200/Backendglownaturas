@@ -13,7 +13,8 @@ const upload = require('../../../middleware/upload');
 router.use(protect);
 
 // LAZY LOADING: Get controller only when route is called
-router.post('/', upload.single('file'), (req, res, next) => container.getMediaController().upload(req, res, next));
+// Frontend sends 'image' field, not 'file'
+router.post('/', upload.single('image'), (req, res, next) => container.getMediaController().upload(req, res, next));
 router.get('/', (req, res, next) => container.getMediaController().getAll(req, res, next));
 router.get('/:id', (req, res, next) => container.getMediaController().getOne(req, res, next));
 router.put('/:id', (req, res, next) => container.getMediaController().update(req, res, next));
