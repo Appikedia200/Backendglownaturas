@@ -30,6 +30,7 @@ const dashboardRoutes = require('./presentation/http/routes/dashboard.routes');
 const settingsRoutes = require('./presentation/http/routes/settings.routes');
 const cartRoutes = require('./presentation/http/routes/cart.routes');
 const emailTemplatesRoutes = require('./presentation/http/routes/email-templates.routes');
+const bannersRoutes = require('./presentation/http/routes/banners.routes');
 
 // Logger
 const logger = require('./config/logger');
@@ -147,6 +148,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
+app.use('/api/banners', bannersRoutes);
 
 // 404 handler
 app.use((req, res) => {

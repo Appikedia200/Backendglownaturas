@@ -15,6 +15,7 @@ const MongoCartRepository = require('../infrastructure/database/mongodb/reposito
 const MongoMediaRepository = require('../infrastructure/database/mongodb/repositories/MongoMediaRepository');
 const MongoSettingsRepository = require('../infrastructure/database/mongodb/repositories/MongoSettingsRepository');
 const MongoEmailTemplateRepository = require('../infrastructure/database/mongodb/repositories/MongoEmailTemplateRepository');
+const MongoBannerRepository = require('../infrastructure/database/mongodb/repositories/MongoBannerRepository');
 
 // Services
 const BrevoEmailService = require('../infrastructure/services/BrevoEmailService');
@@ -51,6 +52,7 @@ const ManageMediaUseCase = require('../application/use-cases/media/ManageMedia.u
 const ManageSettingsUseCase = require('../application/use-cases/settings/ManageSettings.usecase');
 const GetStatisticsUseCase = require('../application/use-cases/dashboard/GetStatistics.usecase');
 const ManageEmailTemplatesUseCase = require('../application/use-cases/email-templates/ManageEmailTemplates.usecase');
+const ManageBannersUseCase = require('../application/use-cases/banners/ManageBanners.usecase');
 
 // Controllers
 const ProductController = require('../presentation/http/controllers/ProductController');
@@ -63,6 +65,7 @@ const MediaController = require('../presentation/http/controllers/MediaControlle
 const SettingsController = require('../presentation/http/controllers/SettingsController');
 const DashboardController = require('../presentation/http/controllers/DashboardController');
 const EmailTemplateController = require('../presentation/http/controllers/EmailTemplateController');
+const BannerController = require('../presentation/http/controllers/BannerController');
 
 class Container {
   constructor() {
@@ -303,6 +306,13 @@ class Container {
     return this.instances.emailTemplateRepository;
   }
 
+  getBannerRepository() {
+    if (!this.instances.bannerRepository) {
+      this.instances.bannerRepository = new MongoBannerRepository();
+    }
+    return this.instances.bannerRepository;
+  }
+
   // ========== AUTH USE CASES ==========
   getLoginUseCase() {
     if (!this.instances.loginUseCase) {
@@ -412,6 +422,15 @@ class Container {
     return this.instances.manageEmailTemplatesUseCase;
   }
 
+  getManageBannersUseCase() {
+    if (!this.instances.manageBannersUseCase) {
+      this.instances.manageBannersUseCase = new ManageBannersUseCase(
+        this.getBannerRepository()
+      );
+    }
+    return this.instances.manageBannersUseCase;
+  }
+
   // ========== NEW CONTROLLERS ==========
   getAuthController() {
     if (!this.instances.authController) {
@@ -470,6 +489,15 @@ class Container {
       );
     }
     return this.instances.emailTemplateController;
+  }
+
+  getBannerController() {
+    if (!this.instances.bannerController) {
+      this.instances.bannerController = new BannerController(
+        this.getManageBannersUseCase()
+      );
+    }
+    return this.instances.bannerController;
   }
 }
 

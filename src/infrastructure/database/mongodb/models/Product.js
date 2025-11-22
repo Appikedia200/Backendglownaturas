@@ -103,18 +103,27 @@ const productSchema = new mongoose.Schema({
     keywords: [String]
   },
   featured: {
-    isFeatured: {
-      type: Boolean,
-      default: false
-    },
-    featuredOrder: Number
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  isNewArrival: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  isBestSeller: {
+    type: Boolean,
+    default: false,
+    index: true
   },
   backInStock: {
-    isBackInStock: {
-      type: Boolean,
-      default: false
-    },
-    backInStockDate: Date
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  backInStockDate: {
+    type: Date
   },
   status: {
     type: String,
@@ -259,11 +268,10 @@ productSchema.methods.confirmStockDeduction = async function(quantity) {
 
 productSchema.index({ name: 'text', description: 'text', keywords: 'text' });
 productSchema.index({ category: 1, status: 1 });
-productSchema.index({ featured: 1 });
-
-// Additional performance indexes
-productSchema.index({ status: 1, featured: -1 }); // For featured products query
-productSchema.index({ category: 1, status: 1, featured: -1 }); // Category + featured
+productSchema.index({ status: 1, featured: -1 }); // Featured products
+productSchema.index({ status: 1, isNewArrival: -1 }); // New arrivals
+productSchema.index({ status: 1, isBestSeller: -1 }); // Best sellers
+productSchema.index({ status: 1, backInStock: -1 }); // Back in stock
 
 module.exports = mongoose.model('Product', productSchema);
 
