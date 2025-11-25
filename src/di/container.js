@@ -15,6 +15,7 @@ const MongoCartRepository = require('../infrastructure/database/mongodb/reposito
 const MongoMediaRepository = require('../infrastructure/database/mongodb/repositories/MongoMediaRepository');
 const MongoSettingsRepository = require('../infrastructure/database/mongodb/repositories/MongoSettingsRepository');
 const MongoEmailTemplateRepository = require('../infrastructure/database/mongodb/repositories/MongoEmailTemplateRepository');
+const MongoHomepageSectionRepository = require('../infrastructure/database/mongodb/repositories/MongoHomepageSectionRepository');
 
 // Services
 const BrevoEmailService = require('../infrastructure/services/BrevoEmailService');
@@ -51,6 +52,7 @@ const ManageMediaUseCase = require('../application/use-cases/media/ManageMedia.u
 const ManageSettingsUseCase = require('../application/use-cases/settings/ManageSettings.usecase');
 const GetStatisticsUseCase = require('../application/use-cases/dashboard/GetStatistics.usecase');
 const ManageEmailTemplatesUseCase = require('../application/use-cases/email-templates/ManageEmailTemplates.usecase');
+const ManageHomepageSectionsUseCase = require('../application/use-cases/homepage-sections/ManageHomepageSections.usecase');
 
 // Controllers
 const ProductController = require('../presentation/http/controllers/ProductController');
@@ -63,6 +65,7 @@ const MediaController = require('../presentation/http/controllers/MediaControlle
 const SettingsController = require('../presentation/http/controllers/SettingsController');
 const DashboardController = require('../presentation/http/controllers/DashboardController');
 const EmailTemplateController = require('../presentation/http/controllers/EmailTemplateController');
+const HomepageSectionController = require('../presentation/http/controllers/HomepageSectionController');
 
 class Container {
   constructor() {
@@ -303,6 +306,13 @@ class Container {
     return this.instances.emailTemplateRepository;
   }
 
+  getHomepageSectionRepository() {
+    if (!this.instances.homepageSectionRepository) {
+      this.instances.homepageSectionRepository = new MongoHomepageSectionRepository();
+    }
+    return this.instances.homepageSectionRepository;
+  }
+
   // ========== AUTH USE CASES ==========
   getLoginUseCase() {
     if (!this.instances.loginUseCase) {
@@ -412,6 +422,16 @@ class Container {
     return this.instances.manageEmailTemplatesUseCase;
   }
 
+  getManageHomepageSectionsUseCase() {
+    if (!this.instances.manageHomepageSectionsUseCase) {
+      this.instances.manageHomepageSectionsUseCase = new ManageHomepageSectionsUseCase(
+        this.getHomepageSectionRepository(),
+        this.getProductRepository()
+      );
+    }
+    return this.instances.manageHomepageSectionsUseCase;
+  }
+
   // ========== NEW CONTROLLERS ==========
   getAuthController() {
     if (!this.instances.authController) {
@@ -479,6 +499,15 @@ class Container {
       );
     }
     return this.instances.emailTemplateController;
+  }
+
+  getHomepageSectionController() {
+    if (!this.instances.homepageSectionController) {
+      this.instances.homepageSectionController = new HomepageSectionController(
+        this.getManageHomepageSectionsUseCase()
+      );
+    }
+    return this.instances.homepageSectionController;
   }
 }
 
