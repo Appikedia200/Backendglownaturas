@@ -17,6 +17,9 @@ router.get('/low-stock', protect, (req, res, next) => container.getProductContro
 // SKU generation endpoint (must be before /:id route to avoid conflicts)
 router.post('/generate-sku', protect, (req, res, next) => container.getProductController().generateSKU(req, res, next));
 
+// Bulk operations (must be before /:id route to avoid conflicts)
+router.put('/bulk/status', protect, (req, res, next) => container.getProductController().bulkUpdateStatus(req, res, next));
+
 router.get('/:id', validateProductId, (req, res, next) => container.getProductController().getOne(req, res, next));
 
 // Protected routes (jewelry validation integrated in validateCreateProduct/validateUpdateProduct)

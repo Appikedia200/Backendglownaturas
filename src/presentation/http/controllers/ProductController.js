@@ -126,6 +126,44 @@ class ProductController {
       next(error);
     }
   }
+
+  /**
+   * Bulk update product status
+   * PUT /api/products/bulk/status
+   */
+  async bulkUpdateStatus(req, res, next) {
+    try {
+      const { ids, status } = req.body;
+
+      // Validate input
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Product IDs are required and must be a non-empty array'
+        });
+      }
+
+      if (!status || !['active', 'inactive', 'draft'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Status must be one of: active, inactive, draft'
+        });
+      }
+
+      // Use the repository directly (this is a simple operation)
+      const { container } = require('../../../di/container');
+      const productRepository = container.getProductRepository();
+      await productRepository.bulkUpdateStatus(ids, status);
+
+      res.json(Response.success({
+        message: `Successfully updated ${ids.length} product(s) to ${status}`,
+        count: ids.length,
+        status
+      }));
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = ProductController;
