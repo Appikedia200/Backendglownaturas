@@ -117,6 +117,25 @@ class AuthController {
   }
 
   /**
+   * Logout
+   * POST /api/auth/logout
+   */
+  async logout(req, res, next) {
+    try {
+      // Since we're using JWT (stateless), we don't need to invalidate on server
+      // Client will remove the token from cookies
+      logger.info('Admin logged out', {
+        adminId: req.admin?._id,
+        email: req.admin?.email
+      });
+      
+      res.json(Response.success({ message: 'Logged out successfully' }));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get current admin
    * GET /api/auth/me
    */

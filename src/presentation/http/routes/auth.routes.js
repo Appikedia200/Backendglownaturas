@@ -19,6 +19,7 @@ router.get('/verify-email', (req, res, next) => container.getAuthController().ve
 router.post('/resend-verification', (req, res, next) => container.getAuthController().resendVerification(req, res, next));
 router.post('/forgot-password', (req, res, next) => container.getAuthController().forgotPassword(req, res, next));
 router.post('/reset-password', (req, res, next) => container.getAuthController().resetPassword(req, res, next));
+router.post('/logout', protect, (req, res, next) => container.getAuthController().logout(req, res, next));
 router.get('/me', protect, (req, res, next) => container.getAuthController().getMe(req, res, next));
 
 module.exports = router;
