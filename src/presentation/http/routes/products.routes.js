@@ -13,6 +13,10 @@ const {
 router.get('/', validateGetProducts, (req, res, next) => container.getProductController().getAll(req, res, next));
 router.get('/jewelry/filters', (req, res, next) => container.getProductController().getJewelryFilters(req, res, next));
 router.get('/low-stock', protect, (req, res, next) => container.getProductController().getLowStock(req, res, next));
+
+// SKU generation endpoint (must be before /:id route to avoid conflicts)
+router.post('/generate-sku', protect, (req, res, next) => container.getProductController().generateSKU(req, res, next));
+
 router.get('/:id', validateProductId, (req, res, next) => container.getProductController().getOne(req, res, next));
 
 // Protected routes (jewelry validation integrated in validateCreateProduct/validateUpdateProduct)

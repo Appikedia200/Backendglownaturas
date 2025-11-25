@@ -112,6 +112,20 @@ class ProductController {
       next(error);
     }
   }
+
+  /**
+   * Generate SKU for product
+   * POST /api/products/generate-sku
+   */
+  async generateSKU(req, res, next) {
+    try {
+      const { generateSKU } = require('../../../utils/skuGenerator');
+      const sku = await generateSKU(req.body.categoryId);
+      res.json(Response.success({ sku }));
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = ProductController;

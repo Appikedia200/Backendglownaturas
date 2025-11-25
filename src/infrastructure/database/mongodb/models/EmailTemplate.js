@@ -49,7 +49,14 @@ const emailTemplateSchema = new mongoose.Schema({
     ref: 'Admin'
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual field for admin panel compatibility (admin panel expects 'type', backend uses 'templateType')
+emailTemplateSchema.virtual('type').get(function() {
+  return this.templateType;
 });
 
 module.exports = mongoose.model('EmailTemplate', emailTemplateSchema);

@@ -62,7 +62,22 @@ const mediaSchema = new mongoose.Schema({
     required: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual fields for admin panel compatibility
+mediaSchema.virtual('url').get(function() {
+  return this.cloudinaryUrl;
+});
+
+mediaSchema.virtual('size').get(function() {
+  return this.fileSize;
+});
+
+mediaSchema.virtual('alt').get(function() {
+  return this.altText;
 });
 
 // Indexes for efficient querying
