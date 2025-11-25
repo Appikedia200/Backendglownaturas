@@ -504,5 +504,160 @@ If you encounter any issues:
 
 ---
 
+## 🎨 **NEW FEATURE: Homepage Sections API**
+
+### **Overview**
+Backend now provides complete control over homepage sections (Featured, New Arrivals, Back in Stock, etc.)
+
+### **Available Sections**:
+- `featured` - Featured Items
+- `new_arrivals` - New Arrivals  
+- `back_in_stock` - Back in Stock
+- `trending` - Trending Now
+- `best_sellers` - Best Sellers
+
+### **Public API Endpoints** (Frontend):
+
+#### **Get All Sections**
+```typescript
+GET /api/homepage-sections?isActive=true
+
+// Response
+{
+  "success": true,
+  "data": [
+    {
+      "sectionType": "featured",
+      "title": "Featured Items",
+      "subtitle": "Hand-picked products just for you",
+      "products": [
+        {
+          "_id": "673d2e8a1b4c5d6e7f8a9b0c",
+          "name": "CeraVe Moisturizing Lotion",
+          "slug": "cerave-moisturizing-lotion-16oz",
+          "price": 5000,
+          "comparePrice": 8000,
+          "stock": 100,
+          "status": "active",
+          "images": [
+            {
+              "mediaId": {
+                "cloudinaryUrl": "https://res.cloudinary.com/.../cerave-lotion.jpg",
+                "filename": "CeraVe Moisturizing Lotion",
+                "altText": "CeraVe Lotion"
+              },
+              "isPrimary": true,
+              "order": 0
+            }
+          ],
+          "category": {
+            "name": "Moisturizers",
+            "slug": "moisturizers"
+          }
+        }
+        // ... more products
+      ],
+      "displayOrder": 1,
+      "isActive": true,
+      "maxProducts": 8
+    }
+    // ... more sections
+  ]
+}
+```
+
+#### **Get Specific Section**
+```typescript
+GET /api/homepage-sections/featured
+
+// Returns single section with populated products
+{
+  "success": true,
+  "data": {
+    "sectionType": "featured",
+    "title": "Featured Items",
+    "subtitle": "Hand-picked products just for you",
+    "products": [ /* array of populated products */ ],
+    "displayOrder": 1,
+    "isActive": true,
+    "maxProducts": 8,
+    "createdAt": "2025-11-25T10:00:00.000Z",
+    "updatedAt": "2025-11-25T12:30:00.000Z"
+  }
+}
+```
+
+### **Frontend Implementation Example**:
+
+#### **Homepage Component**:
+```typescript
+// Fetch all active sections
+const { data: sections } = await fetch('/api/homepage-sections?isActive=true')
+  .then(res => res.json());
+
+// Render each section
+{sections.map(section => (
+  <section key={section.sectionType} className="py-12">
+    <h2>{section.title}</h2>
+    <p>{section.subtitle}</p>
+    
+    {/* Product carousel/grid */}
+    <div className="grid grid-cols-4 gap-4">
+      {section.products.slice(0, section.maxProducts).map(product => (
+        <ProductCard 
+          key={product._id}
+          product={product}
+          image={product.images.find(img => img.isPrimary)?.mediaId?.cloudinaryUrl}
+        />
+      ))}
+    </div>
+  </section>
+))}
+```
+
+#### **Image Carousel (Auto-rotating)**:
+```typescript
+function ProductCarousel({ products }: { products: Product[] }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // Auto-rotate every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % products.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [products.length]);
+  
+  return (
+    <div className="relative">
+      {products.map((product, index) => (
+        <div 
+          key={product._id}
+          className={index === currentIndex ? 'block' : 'hidden'}
+        >
+          <img 
+            src={product.images[0]?.mediaId?.cloudinaryUrl} 
+            alt={product.name}
+          />
+          <h3>{product.name}</h3>
+          <p>₦{product.price.toLocaleString()}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### **Benefits**:
+✅ Admin controls which products appear on homepage  
+✅ No hardcoded product lists in frontend  
+✅ Dynamic product showcases  
+✅ Rotating images/carousels  
+✅ SEO-friendly product featuring  
+✅ Easy A/B testing of products
+
+---
+
 **Backend is ready and fully tested. Make these changes and everything will work perfectly!** 🚀
 
