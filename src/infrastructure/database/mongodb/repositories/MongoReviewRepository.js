@@ -111,6 +111,15 @@ class MongoReviewRepository extends IReviewRepository {
 
     return result[0]?.averageRating || 0;
   }
+
+  /**
+   * Count reviews by status
+   * @param {string} status - Review status
+   * @returns {Promise<number>}
+   */
+  async countByStatus(status) {
+    return await Review.countDocuments({ status });
+  }
 }
 
 module.exports = MongoReviewRepository;

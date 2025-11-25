@@ -189,6 +189,28 @@ class MongoProductRepository extends IProductRepository {
       stoneTypes: []
     };
   }
+
+  /**
+   * Count products with optional filter
+   * @param {Object} filter - MongoDB filter object
+   * @returns {Promise<number>}
+   */
+  async count(filter = {}) {
+    return await Product.countDocuments(filter);
+  }
+
+  /**
+   * Count products with low stock
+   * @param {number} threshold - Stock threshold
+   * @returns {Promise<number>}
+   */
+  async countLowStock(threshold = 10) {
+    return await Product.countDocuments({
+      stock: { $lte: threshold },
+      trackInventory: true,
+      status: 'active'
+    });
+  }
 }
 
 module.exports = MongoProductRepository;

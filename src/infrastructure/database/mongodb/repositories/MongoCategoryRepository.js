@@ -57,6 +57,15 @@ class MongoCategoryRepository extends ICategoryRepository {
   async countProducts(id) {
     return await Product.countDocuments({ category: id });
   }
+
+  /**
+   * Count categories with optional filter
+   * @param {Object} filter - MongoDB filter object
+   * @returns {Promise<number>}
+   */
+  async count(filter = {}) {
+    return await Category.countDocuments(filter);
+  }
 }
 
 module.exports = MongoCategoryRepository;

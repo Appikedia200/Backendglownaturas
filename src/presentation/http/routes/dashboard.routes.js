@@ -12,7 +12,8 @@ const { protect } = require('../../../middleware/auth');
 router.use(protect);
 
 // LAZY LOADING: Get controller only when route is called
-router.get('/statistics', (req, res, next) => container.getDashboardController().getStatistics(req, res, next));
+router.get('/stats', (req, res, next) => container.getDashboardController().getStatistics(req, res, next));
+router.get('/statistics', (req, res, next) => container.getDashboardController().getStatistics(req, res, next)); // Backward compatibility
 
 module.exports = router;
 

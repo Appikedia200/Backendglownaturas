@@ -141,6 +141,47 @@ class MongoOrderRepository extends IOrderRepository {
       byStatus: stats,
     };
   }
+
+  /**
+   * Count orders with optional filter
+   * @param {Object} filter - MongoDB filter object
+   * @returns {Promise<number>}
+   */
+  async count(filter = {}) {
+    const query = {};
+    if (filter.$gte || filter.$lte) {
+      query.createdAt = filter;
+    }
+    return await Order.countDocuments(query);
+  }
+
+  /**
+   * Get total revenue with optional date filter
+   * @param {Object} dateFilter - Date filter object
+   * @returns {Promise<number>}
+   */
+  async getTotalRevenue(dateFilter = {}) {
+    const match = { paymentStatus: 'paid' };
+    if (dateFilter.$gte || dateFilter.$lte) {
+      match.createdAt = dateFilter;
+    }
+    
+    const result = await Order.aggregate([
+      { $match: match },
+      { $group: { _id: null, total: { $sum: '$total' } } }
+    ]);
+    
+    return result[0]?.total || 0;
+  }
+
+  /**
+   * Count orders by status
+   * @param {string} status - Order status
+   * @returns {Promise<number>}
+   */
+  async countByStatus(status) {
+    return await Order.countDocuments({ status });
+  }
 }
 
 module.exports = MongoOrderRepository;
