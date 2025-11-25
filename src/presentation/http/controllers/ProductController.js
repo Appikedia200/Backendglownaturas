@@ -133,13 +133,15 @@ class ProductController {
    */
   async bulkUpdateStatus(req, res, next) {
     try {
-      const { ids, status } = req.body;
+      // Accept both 'ids' and 'productIds' for compatibility
+      const ids = req.body.ids || req.body.productIds;
+      const { status } = req.body;
 
       // Validate input
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({
           success: false,
-          error: 'Product IDs are required and must be a non-empty array'
+          error: 'Product IDs are required and must be a non-empty array (use "ids" or "productIds" field)'
         });
       }
 
