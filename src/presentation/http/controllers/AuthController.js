@@ -136,6 +136,56 @@ class AuthController {
   }
 
   /**
+   * Change password for logged-in admin
+   * POST /api/auth/change-password
+   */
+  async changePassword(req, res, next) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Current password and new password are required'
+        });
+      }
+      
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          error: 'New password must be at least 8 characters long'
+        });
+      }
+      
+      // Verify current password
+      const admin = await this.adminRepository.findById(req.admin._id);
+      const isValid = await admin.comparePassword(currentPassword);
+      
+      if (!isValid) {
+        return res.status(401).json({
+          success: false,
+          error: 'Current password is incorrect'
+        });
+      }
+      
+      // Update password
+      admin.password = newPassword;  // Will be hashed by pre-save hook
+      await admin.save();
+      
+      logger.info('Password changed successfully', {
+        adminId: admin._id,
+        email: admin.email
+      });
+      
+      res.json(Response.success({
+        message: 'Password changed successfully'
+      }));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get current admin
    * GET /api/auth/me
    */
