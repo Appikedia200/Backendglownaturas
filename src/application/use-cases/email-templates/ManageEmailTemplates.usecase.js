@@ -37,6 +37,13 @@ class ManageEmailTemplatesUseCase {
   }
 
   /**
+   * Get template by templateType
+   */
+  async getTemplateByType(templateType) {
+    return await this.emailTemplateRepository.findByType(templateType);
+  }
+
+  /**
    * Create template
    */
   async createTemplate(dto) {
