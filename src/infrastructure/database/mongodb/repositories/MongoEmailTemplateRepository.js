@@ -44,6 +44,21 @@ class MongoEmailTemplateRepository extends IEmailTemplateRepository {
     return template;
   }
 
+  async updateByType(templateType, updates) {
+    const template = await EmailTemplate.findOneAndUpdate(
+      { templateType },
+      updates,
+      { new: true, runValidators: true }
+    );
+
+    if (!template) {
+      throw new NotFoundError('Email template');
+    }
+
+    return template;
+  }
+
+
   async delete(id) {
     const template = await EmailTemplate.findByIdAndDelete(id);
     if (!template) {

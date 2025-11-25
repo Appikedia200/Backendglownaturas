@@ -68,6 +68,18 @@ class ManageEmailTemplatesUseCase {
     return template;
   }
 
+    /**
+   * Update template by templateType
+   */
+    async updateTemplateByType(templateType, updates) {
+      const template = await this.emailTemplateRepository.updateByType(templateType, updates);
+  
+      logger.info('Email template updated', { templateType });
+  
+      return template;
+    }
+  
+
   /**
    * Delete template
    */
