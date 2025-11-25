@@ -13,6 +13,14 @@ class MongoEmailTemplateRepository extends IEmailTemplateRepository {
     return await EmailTemplate.findOne({ name, isActive: true });
   }
 
+  async findByType(templateType) {
+    const template = await EmailTemplate.findOne({ templateType });
+    if (!template) {
+      throw new NotFoundError('Email template');
+    }
+    return template;
+  }
+
   async findById(id) {
     const template = await EmailTemplate.findById(id);
     if (!template) {
