@@ -38,17 +38,28 @@ class ManageMediaUseCase {
       throw new ValidationError('File size must be less than 5MB');
     }
 
-    // Upload to storage (Cloudinary)
+    // Generate a clean, SEO-friendly filename
+    const timestamp = Date.now();
+    const cleanFilename = this._sanitizeFilename(file.originalname);
+    const publicId = `glownatura/${timestamp}-${cleanFilename}`;
+
+    // Upload to storage (Cloudinary) with custom public_id
     const uploadResult = await this.storageService.upload(file, {
       folder: 'glownatura',
-      resource_type: 'image'
+      resource_type: 'image',
+      public_id: publicId,
+      use_filename: true,
+      unique_filename: false
     });
+
+    // Extract just the filename without extension for display
+    const displayFilename = file.originalname.replace(/\.[^/.]+$/, '');
 
     // Create media record with flat structure matching model
     const media = await this.mediaRepository.create({
-      filename: uploadResult.original_filename || file.originalname,
+      filename: displayFilename,
       originalName: file.originalname,
-      altText: altText || '',
+      altText: altText || displayFilename,
       cloudinaryUrl: uploadResult.secure_url,
       cloudinaryPublicId: uploadResult.public_id,
       cloudinaryFolder: 'glownatura',
@@ -61,11 +72,30 @@ class ManageMediaUseCase {
 
     logger.info('Media uploaded successfully', {
       mediaId: media._id,
+      filename: displayFilename,
       publicId: uploadResult.public_id,
       uploadedBy
     });
 
     return media;
+  }
+
+  /**
+   * Sanitize filename for URL-safe storage
+   * @private
+   */
+  _sanitizeFilename(filename) {
+    // Remove extension
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    
+    // Replace spaces and special characters with hyphens
+    // Keep only alphanumeric, hyphens, and underscores
+    return nameWithoutExt
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/--+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
   }
 
   /**
