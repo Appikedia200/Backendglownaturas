@@ -12,13 +12,15 @@ class ProductController {
    * @param {DeleteProductUseCase} deleteProductUseCase
    * @param {GetProductsUseCase} getProductsUseCase
    * @param {GetJewelryFiltersUseCase} getJewelryFiltersUseCase
+   * @param {IProductRepository} productRepository
    */
-  constructor(createProductUseCase, updateProductUseCase, deleteProductUseCase, getProductsUseCase, getJewelryFiltersUseCase) {
+  constructor(createProductUseCase, updateProductUseCase, deleteProductUseCase, getProductsUseCase, getJewelryFiltersUseCase, productRepository) {
     this.createProductUseCase = createProductUseCase;
     this.updateProductUseCase = updateProductUseCase;
     this.deleteProductUseCase = deleteProductUseCase;
     this.getProductsUseCase = getProductsUseCase;
     this.getJewelryFiltersUseCase = getJewelryFiltersUseCase;
+    this.productRepository = productRepository;
   }
 
   /**
@@ -153,9 +155,7 @@ class ProductController {
       }
 
       // Use the repository directly (this is a simple operation)
-      const { container } = require('../../../di/container');
-      const productRepository = container.getProductRepository();
-      await productRepository.bulkUpdateStatus(ids, status);
+      await this.productRepository.bulkUpdateStatus(ids, status);
 
       res.json(Response.success({
         message: `Successfully updated ${ids.length} product(s) to ${status}`,

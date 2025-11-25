@@ -234,7 +234,8 @@ class Container {
         this.getUpdateProductUseCase(),
         this.getDeleteProductUseCase(),
         this.getGetProductsUseCase(),
-        this.getGetJewelryFiltersUseCase()
+        this.getGetJewelryFiltersUseCase(),
+        this.getProductRepository() // Inject repository for bulk operations
       );
     }
     return this.instances.productController;

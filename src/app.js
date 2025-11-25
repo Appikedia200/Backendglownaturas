@@ -129,7 +129,7 @@ app.get('/health', (req, res) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV,
-      version: '5.1.0',
+      version: '5.2.1',
       dependencies: {
         mongodb: mongoStatus
       }
