@@ -57,7 +57,21 @@ class GetStatisticsUseCase {
     // Calculate average order value
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+    // Return flat structure for frontend compatibility
     const statistics = {
+      // Flat structure (admin panel expects this)
+      totalProducts,
+      lowStockProducts,
+      totalOrders,
+      pendingOrders,
+      completedOrders,
+      totalRevenue,
+      averageOrderValue,
+      totalCategories,
+      pendingReviews,
+      recentOrders: recentOrders.orders,
+      
+      // Nested structure (for backward compatibility)
       orders: {
         total: totalOrders,
         pending: pendingOrders,
