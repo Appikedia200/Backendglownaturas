@@ -62,22 +62,13 @@ const homepageSectionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Virtual fields for frontend compatibility (Admin Panel expects 'type' and 'active')
-homepageSectionSchema.virtual('type').get(function() {
-  return this.sectionType;
-});
-
-homepageSectionSchema.virtual('active').get(function() {
-  return this.isActive;
-});
-
-// Ensure virtuals are included in JSON responses
+// Ensure virtuals and field aliases are included in JSON responses
 homepageSectionSchema.set('toJSON', { 
   virtuals: true,
   transform: function(doc, ret) {
-    // Add virtual fields
-    ret.type = ret.sectionType;
-    ret.active = ret.isActive;
+    // Add field aliases for admin panel compatibility
+    ret.type = ret.sectionType;   // Admin panel expects 'type'
+    ret.active = ret.isActive;     // Admin panel expects 'active'
     return ret;
   }
 });
