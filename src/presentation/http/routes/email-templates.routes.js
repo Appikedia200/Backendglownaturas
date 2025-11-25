@@ -12,6 +12,12 @@ const { protect } = require('../../../middleware/auth');
 router.use(protect);
 
 // LAZY LOADING: Get controller only when route is called
+// Email template actions (specific routes MUST come before /:id to avoid route conflicts)
+router.post('/preview', (req, res, next) => container.getEmailTemplateController().preview(req, res, next));
+router.post('/test-send', (req, res, next) => container.getEmailTemplateController().testSend(req, res, next));
+router.post('/:type/restore', (req, res, next) => container.getEmailTemplateController().restore(req, res, next));
+
+// Generic CRUD routes
 router.get('/', (req, res, next) => container.getEmailTemplateController().getAll(req, res, next));
 router.get('/:id', (req, res, next) => container.getEmailTemplateController().getOne(req, res, next));
 router.post('/', (req, res, next) => container.getEmailTemplateController().create(req, res, next));

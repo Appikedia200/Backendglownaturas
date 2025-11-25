@@ -465,8 +465,17 @@ class Container {
 
   getEmailTemplateController() {
     if (!this.instances.emailTemplateController) {
+      const defaultTemplates = require('../utils/defaultEmailTemplates');
+      // Convert default templates object to array format
+      const templatesArray = Object.keys(defaultTemplates).map(key => ({
+        templateType: key,
+        ...defaultTemplates[key]
+      }));
+      
       this.instances.emailTemplateController = new EmailTemplateController(
-        this.getManageEmailTemplatesUseCase()
+        this.getManageEmailTemplatesUseCase(),
+        this.getEmailService(),
+        templatesArray
       );
     }
     return this.instances.emailTemplateController;

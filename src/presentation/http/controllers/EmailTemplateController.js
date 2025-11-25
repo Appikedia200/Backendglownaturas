@@ -9,9 +9,12 @@ const Response = require('../../../shared/utils/Response');
 class EmailTemplateController {
   /**
    * @param {ManageEmailTemplatesUseCase} manageEmailTemplatesUseCase
+   * @param {IEmailService} emailService
    */
-  constructor(manageEmailTemplatesUseCase) {
+  constructor(manageEmailTemplatesUseCase, emailService, defaultTemplates) {
     this.manageEmailTemplatesUseCase = manageEmailTemplatesUseCase;
+    this.emailService = emailService;
+    this.defaultTemplates = defaultTemplates;
   }
 
   /**
@@ -100,6 +103,56 @@ class EmailTemplateController {
     try {
       const result = await this.manageEmailTemplatesUseCase.deleteTemplate(req.params.id);
       res.json(Response.success(result));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Preview template with sample data
+   * POST /api/email-templates/preview
+   */
+  async preview(req, res, next) {
+    try {
+      const { type, sampleData } = req.body;
+      const preview = await this.manageEmailTemplatesUseCase.previewTemplate(type, sampleData);
+      res.json(Response.success(preview));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Send test email
+   * POST /api/email-templates/test-send
+   */
+  async testSend(req, res, next) {
+    try {
+      const { type, to, sampleData } = req.body;
+      const result = await this.manageEmailTemplatesUseCase.sendTestEmail(
+        type,
+        to,
+        sampleData,
+        this.emailService
+      );
+      res.json(Response.success(result));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Restore template to default
+   * POST /api/email-templates/:type/restore
+   */
+  async restore(req, res, next) {
+    try {
+      const { type } = req.params;
+      const template = await this.manageEmailTemplatesUseCase.restoreToDefault(
+        type,
+        this.defaultTemplates
+      );
+      res.json(Response.success(template));
     } catch (error) {
       next(error);
     }
