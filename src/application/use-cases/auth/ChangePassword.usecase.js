@@ -6,7 +6,6 @@
 
 const { UnauthorizedError, ValidationError, BadRequestError } = require('../../../shared/errors/AppError');
 const logger = require('../../../config/logger');
-const bcrypt = require('bcrypt');
 
 class ChangePasswordUseCase {
   constructor(adminRepository) {
@@ -46,13 +45,9 @@ class ChangePasswordUseCase {
       throw new UnauthorizedError('Current password is incorrect');
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-
-    // Update password
-    await this.adminRepository.update(admin._id, {
-      password: hashedPassword
-    });
+    // Update password using model (will be hashed by pre-save hook)
+    admin.password = newPassword;
+    await admin.save();
 
     logger.info('Password changed successfully', {
       adminId: admin._id,
