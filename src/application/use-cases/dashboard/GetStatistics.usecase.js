@@ -39,6 +39,7 @@ class GetStatisticsUseCase {
       completedOrders,
       totalProducts,
       lowStockProducts,
+      inventoryValue,
       totalCategories,
       pendingReviews,
       recentOrders
@@ -49,6 +50,7 @@ class GetStatisticsUseCase {
       this.orderRepository.countByStatus('delivered'),
       this.productRepository.count({}),
       this.productRepository.countLowStock(10),
+      this.productRepository.getInventoryValue(),
       this.categoryRepository.count({}),
       this.reviewRepository.countByStatus('pending'),
       this.orderRepository.findAll({ createdAt: dateFilter }, { limit: 10, sortBy: 'createdAt', sortOrder: 'desc' })
@@ -62,6 +64,7 @@ class GetStatisticsUseCase {
       // Flat structure (admin panel expects this)
       totalProducts,
       lowStockProducts,
+      inventoryValue,
       totalOrders,
       pendingOrders,
       completedOrders,
@@ -84,7 +87,8 @@ class GetStatisticsUseCase {
       },
       products: {
         total: totalProducts,
-        lowStock: lowStockProducts
+        lowStock: lowStockProducts,
+        inventoryValue: inventoryValue
       },
       categories: {
         total: totalCategories

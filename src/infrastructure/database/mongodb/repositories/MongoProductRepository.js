@@ -211,6 +211,55 @@ class MongoProductRepository extends IProductRepository {
       status: 'active'
     });
   }
+
+  /**
+   * Calculate total inventory value (sum of price × stock for all products)
+   * @returns {Promise<number>}
+   */
+  async getInventoryValue() {
+    const result = await Product.aggregate([
+      {
+        $match: {
+          status: 'active'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalValue: {
+            $sum: {
+              $multiply: ['$price', '$stock']
+            }
+          }
+        }
+      }
+    ]);
+    
+    return result[0]?.totalValue || 0;
+  }
+
+  /**
+   * Get products data for export
+   * @returns {Promise<Array>}
+   */
+  async getProductsForExport() {
+    const products = await Product.find()
+      .populate('category', 'name')
+      .select('name sku price stock status category createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return products.map(product => ({
+      name: product.name,
+      sku: product.sku,
+      price: product.price,
+      stock: product.stock,
+      status: product.status,
+      category: product.category?.name || 'Uncategorized',
+      inventoryValue: product.price * product.stock,
+      createdAt: product.createdAt
+    }));
+  }
 }
 
 module.exports = MongoProductRepository;

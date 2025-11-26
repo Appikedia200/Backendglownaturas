@@ -182,6 +182,249 @@ class MongoOrderRepository extends IOrderRepository {
   async countByStatus(status) {
     return await Order.countDocuments({ status });
   }
+
+  /**
+   * Count orders by payment status with optional date filter
+   * @param {string} paymentStatus - Payment status
+   * @param {Object} dateFilter - Date filter object
+   * @returns {Promise<number>}
+   */
+  async countByPaymentStatus(paymentStatus, dateFilter = {}) {
+    const query = { paymentStatus };
+    if (dateFilter.$gte || dateFilter.$lte) {
+      query.createdAt = dateFilter;
+    }
+    return await Order.countDocuments(query);
+  }
+
+  /**
+   * Get average order value with optional date filter
+   * @param {Object} dateFilter - Date filter object
+   * @returns {Promise<number>}
+   */
+  async getAverageOrderValue(dateFilter = {}) {
+    const match = { paymentStatus: 'paid' };
+    if (dateFilter.$gte || dateFilter.$lte) {
+      match.createdAt = dateFilter;
+    }
+    
+    const result = await Order.aggregate([
+      { $match: match },
+      { $group: { _id: null, avgValue: { $avg: '$total' } } }
+    ]);
+    
+    return result[0]?.avgValue || 0;
+  }
+
+  /**
+   * Get total items sold with optional date filter
+   * @param {Object} dateFilter - Date filter object
+   * @returns {Promise<number>}
+   */
+  async getTotalItemsSold(dateFilter = {}) {
+    const match = { paymentStatus: 'paid' };
+    if (dateFilter.$gte || dateFilter.$lte) {
+      match.createdAt = dateFilter;
+    }
+    
+    const result = await Order.aggregate([
+      { $match: match },
+      { $unwind: '$items' },
+      { $group: { _id: null, totalQty: { $sum: '$items.quantity' } } }
+    ]);
+    
+    return result[0]?.totalQty || 0;
+  }
+
+  /**
+   * Get revenue over time grouped by period
+   * @param {Object} dateFilter - Date filter object
+   * @param {string} groupBy - Group by day, week, or month
+   * @returns {Promise<Array>}
+   */
+  async getRevenueOverTime(dateFilter = {}, groupBy = 'day') {
+    const match = { paymentStatus: 'paid' };
+    if (dateFilter.$gte || dateFilter.$lte) {
+      match.createdAt = dateFilter;
+    }
+
+    let dateFormat;
+    switch (groupBy) {
+      case 'day':
+        dateFormat = '%Y-%m-%d';
+        break;
+      case 'week':
+        dateFormat = '%Y-W%V';
+        break;
+      case 'month':
+        dateFormat = '%Y-%m';
+        break;
+      default:
+        dateFormat = '%Y-%m-%d';
+    }
+
+    const result = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: { $dateToString: { format: dateFormat, date: '$createdAt' } },
+          revenue: { $sum: '$total' },
+          orders: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id',
+          revenue: 1,
+          orders: 1
+        }
+      }
+    ]);
+
+    return result;
+  }
+
+  /**
+   * Get top selling products
+   * @param {Object} dateFilter - Date filter object
+   * @param {number} limit - Number of products to return
+   * @returns {Promise<Array>}
+   */
+  async getTopProducts(dateFilter = {}, limit = 5) {
+    const match = { paymentStatus: 'paid' };
+    if (dateFilter.$gte || dateFilter.$lte) {
+      match.createdAt = dateFilter;
+    }
+
+    const result = await Order.aggregate([
+      { $match: match },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.product',
+          totalSold: { $sum: '$items.quantity' },
+          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+        }
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'products',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'productInfo'
+        }
+      },
+      { $unwind: { path: '$productInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          productId: '$_id',
+          name: '$productInfo.name',
+          totalSold: 1,
+          revenue: 1,
+          image: { $arrayElemAt: ['$productInfo.images', 0] }
+        }
+      }
+    ]);
+
+    return result;
+  }
+
+  /**
+   * Get sales by category
+   * @param {Object} dateFilter - Date filter object
+   * @returns {Promise<Array>}
+   */
+  async getSalesByCategory(dateFilter = {}) {
+    const match = { paymentStatus: 'paid' };
+    if (dateFilter.$gte || dateFilter.$lte) {
+      match.createdAt = dateFilter;
+    }
+
+    const result = await Order.aggregate([
+      { $match: match },
+      { $unwind: '$items' },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.product',
+          foreignField: '_id',
+          as: 'productInfo'
+        }
+      },
+      { $unwind: { path: '$productInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'productInfo.category',
+          foreignField: '_id',
+          as: 'categoryInfo'
+        }
+      },
+      { $unwind: { path: '$categoryInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: '$categoryInfo._id',
+          categoryName: { $first: '$categoryInfo.name' },
+          totalSales: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+          itemsSold: { $sum: '$items.quantity' }
+        }
+      },
+      { $sort: { totalSales: -1 } },
+      {
+        $project: {
+          _id: 0,
+          categoryId: '$_id',
+          categoryName: { $ifNull: ['$categoryName', 'Uncategorized'] },
+          totalSales: 1,
+          itemsSold: 1
+        }
+      }
+    ]);
+
+    return result;
+  }
+
+  /**
+   * Get orders for export
+   * @param {Object} dateFilter - Date filter object
+   * @returns {Promise<Array>}
+   */
+  async getOrdersForExport(dateFilter = {}) {
+    const query = {};
+    if (dateFilter.$gte || dateFilter.$lte) {
+      query.createdAt = dateFilter;
+    }
+
+    const orders = await Order.find(query)
+      .populate('customer.userId', 'name email')
+      .select('orderNumber customer total paymentStatus status createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return orders.map(order => ({
+      orderNumber: order.orderNumber,
+      customerName: order.customer?.name || 'Guest',
+      customerEmail: order.customer?.email || '',
+      total: order.total,
+      paymentStatus: order.paymentStatus,
+      orderStatus: order.status,
+      date: order.createdAt
+    }));
+  }
+
+  /**
+   * Get revenue data for export
+   * @param {Object} dateFilter - Date filter object
+   * @returns {Promise<Array>}
+   */
+  async getRevenueForExport(dateFilter = {}) {
+    return await this.getRevenueOverTime(dateFilter, 'day');
+  }
 }
 
 module.exports = MongoOrderRepository;

@@ -54,6 +54,13 @@ const GetStatisticsUseCase = require('../application/use-cases/dashboard/GetStat
 const ManageEmailTemplatesUseCase = require('../application/use-cases/email-templates/ManageEmailTemplates.usecase');
 const ManageHomepageSectionsUseCase = require('../application/use-cases/homepage-sections/ManageHomepageSections.usecase');
 
+// Analytics Use Cases
+const GetAnalyticsSummaryUseCase = require('../application/use-cases/analytics/GetAnalyticsSummary.usecase');
+const GetRevenueOverTimeUseCase = require('../application/use-cases/analytics/GetRevenueOverTime.usecase');
+const GetTopProductsUseCase = require('../application/use-cases/analytics/GetTopProducts.usecase');
+const GetSalesByCategoryUseCase = require('../application/use-cases/analytics/GetSalesByCategory.usecase');
+const ExportAnalyticsUseCase = require('../application/use-cases/analytics/ExportAnalytics.usecase');
+
 // Controllers
 const ProductController = require('../presentation/http/controllers/ProductController');
 const OrderController = require('../presentation/http/controllers/OrderController');
@@ -66,6 +73,7 @@ const SettingsController = require('../presentation/http/controllers/SettingsCon
 const DashboardController = require('../presentation/http/controllers/DashboardController');
 const EmailTemplateController = require('../presentation/http/controllers/EmailTemplateController');
 const HomepageSectionController = require('../presentation/http/controllers/HomepageSectionController');
+const AnalyticsController = require('../presentation/http/controllers/AnalyticsController');
 
 class Container {
   constructor() {
@@ -509,6 +517,67 @@ class Container {
       );
     }
     return this.instances.homepageSectionController;
+  }
+
+  // ========== ANALYTICS USE CASES ==========
+  getGetAnalyticsSummaryUseCase() {
+    if (!this.instances.getAnalyticsSummaryUseCase) {
+      this.instances.getAnalyticsSummaryUseCase = new GetAnalyticsSummaryUseCase(
+        this.getOrderRepository(),
+        this.getProductRepository()
+      );
+    }
+    return this.instances.getAnalyticsSummaryUseCase;
+  }
+
+  getGetRevenueOverTimeUseCase() {
+    if (!this.instances.getRevenueOverTimeUseCase) {
+      this.instances.getRevenueOverTimeUseCase = new GetRevenueOverTimeUseCase(
+        this.getOrderRepository()
+      );
+    }
+    return this.instances.getRevenueOverTimeUseCase;
+  }
+
+  getGetTopProductsUseCase() {
+    if (!this.instances.getTopProductsUseCase) {
+      this.instances.getTopProductsUseCase = new GetTopProductsUseCase(
+        this.getOrderRepository()
+      );
+    }
+    return this.instances.getTopProductsUseCase;
+  }
+
+  getGetSalesByCategoryUseCase() {
+    if (!this.instances.getSalesByCategoryUseCase) {
+      this.instances.getSalesByCategoryUseCase = new GetSalesByCategoryUseCase(
+        this.getOrderRepository()
+      );
+    }
+    return this.instances.getSalesByCategoryUseCase;
+  }
+
+  getExportAnalyticsUseCase() {
+    if (!this.instances.exportAnalyticsUseCase) {
+      this.instances.exportAnalyticsUseCase = new ExportAnalyticsUseCase(
+        this.getOrderRepository(),
+        this.getProductRepository()
+      );
+    }
+    return this.instances.exportAnalyticsUseCase;
+  }
+
+  getAnalyticsController() {
+    if (!this.instances.analyticsController) {
+      this.instances.analyticsController = new AnalyticsController(
+        this.getGetAnalyticsSummaryUseCase(),
+        this.getGetRevenueOverTimeUseCase(),
+        this.getGetTopProductsUseCase(),
+        this.getGetSalesByCategoryUseCase(),
+        this.getExportAnalyticsUseCase()
+      );
+    }
+    return this.instances.analyticsController;
   }
 }
 
