@@ -14,14 +14,16 @@ class AuthController {
    * @param {VerifyEmailWithTokenUseCase} verifyEmailWithTokenUseCase
    * @param {ResetPasswordUseCase} resetPasswordUseCase
    * @param {ResendVerificationUseCase} resendVerificationUseCase
+   * @param {ChangePasswordUseCase} changePasswordUseCase
    */
-  constructor(loginUseCase, registerUseCase, verifyEmailUseCase, verifyEmailWithTokenUseCase, resetPasswordUseCase, resendVerificationUseCase) {
+  constructor(loginUseCase, registerUseCase, verifyEmailUseCase, verifyEmailWithTokenUseCase, resetPasswordUseCase, resendVerificationUseCase, changePasswordUseCase) {
     this.loginUseCase = loginUseCase;
     this.registerUseCase = registerUseCase;
     this.verifyEmailUseCase = verifyEmailUseCase;
     this.verifyEmailWithTokenUseCase = verifyEmailWithTokenUseCase;
     this.resetPasswordUseCase = resetPasswordUseCase;
     this.resendVerificationUseCase = resendVerificationUseCase;
+    this.changePasswordUseCase = changePasswordUseCase;
   }
 
   /**
@@ -142,44 +144,10 @@ class AuthController {
   async changePassword(req, res, next) {
     try {
       const { currentPassword, newPassword } = req.body;
+      const adminId = req.admin._id;
       
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          error: 'Current password and new password are required'
-        });
-      }
-      
-      if (newPassword.length < 8) {
-        return res.status(400).json({
-          success: false,
-          error: 'New password must be at least 8 characters long'
-        });
-      }
-      
-      // Verify current password
-      const admin = await this.adminRepository.findById(req.admin._id);
-      const isValid = await admin.comparePassword(currentPassword);
-      
-      if (!isValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Current password is incorrect'
-        });
-      }
-      
-      // Update password
-      admin.password = newPassword;  // Will be hashed by pre-save hook
-      await admin.save();
-      
-      logger.info('Password changed successfully', {
-        adminId: admin._id,
-        email: admin.email
-      });
-      
-      res.json(Response.success({
-        message: 'Password changed successfully'
-      }));
+      const result = await this.changePasswordUseCase.execute(adminId, currentPassword, newPassword);
+      res.json(Response.success(result));
     } catch (error) {
       next(error);
     }

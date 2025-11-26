@@ -45,6 +45,7 @@ const VerifyEmailUseCase = require('../application/use-cases/auth/VerifyEmail.us
 const VerifyEmailWithTokenUseCase = require('../application/use-cases/auth/VerifyEmailWithToken.usecase');
 const ResetPasswordUseCase = require('../application/use-cases/auth/ResetPassword.usecase');
 const ResendVerificationUseCase = require('../application/use-cases/auth/ResendVerification.usecase');
+const ChangePasswordUseCase = require('../application/use-cases/auth/ChangePassword.usecase');
 
 // Use Cases - Cart, Media, Settings, Dashboard, Email Templates
 const ManageCartUseCase = require('../application/use-cases/cart/ManageCart.usecase');
@@ -380,6 +381,15 @@ class Container {
     return this.instances.resendVerificationUseCase;
   }
 
+  getChangePasswordUseCase() {
+    if (!this.instances.changePasswordUseCase) {
+      this.instances.changePasswordUseCase = new ChangePasswordUseCase(
+        this.getAdminRepository()
+      );
+    }
+    return this.instances.changePasswordUseCase;
+  }
+
   // ========== OTHER USE CASES ==========
   getManageCartUseCase() {
     if (!this.instances.manageCartUseCase) {
@@ -450,7 +460,8 @@ class Container {
         this.getVerifyEmailUseCase(),
         this.getVerifyEmailWithTokenUseCase(),
         this.getResetPasswordUseCase(),
-        this.getResendVerificationUseCase()
+        this.getResendVerificationUseCase(),
+        this.getChangePasswordUseCase()
       );
     }
     return this.instances.authController;
