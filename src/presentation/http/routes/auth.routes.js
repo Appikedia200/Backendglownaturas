@@ -21,6 +21,7 @@ router.post('/forgot-password', (req, res, next) => container.getAuthController(
 router.post('/reset-password', (req, res, next) => container.getAuthController().resetPassword(req, res, next));
 router.post('/logout', protect, (req, res, next) => container.getAuthController().logout(req, res, next));
 router.post('/change-password', protect, (req, res, next) => container.getAuthController().changePassword(req, res, next));
+router.put('/change-password', protect, (req, res, next) => container.getAuthController().changePassword(req, res, next)); // Admin panel uses PUT
 router.get('/me', protect, (req, res, next) => container.getAuthController().getMe(req, res, next));
 
 module.exports = router;
