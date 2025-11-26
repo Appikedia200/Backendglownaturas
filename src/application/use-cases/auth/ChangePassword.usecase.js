@@ -27,8 +27,9 @@ class ChangePasswordUseCase {
       throw new BadRequestError('New password must be different from current password');
     }
 
-    // Get admin with password
-    const admin = await this.adminRepository.findById(adminId);
+    // Get admin with password (need to select password field)
+    const Admin = require('../../../infrastructure/database/mongodb/models/Admin');
+    const admin = await Admin.findById(adminId).select('+password');
     
     if (!admin) {
       throw new UnauthorizedError('Admin not found');
