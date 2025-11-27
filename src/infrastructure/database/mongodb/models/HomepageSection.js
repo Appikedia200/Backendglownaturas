@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const homepageSectionSchema = new mongoose.Schema({
   sectionType: {
     type: String,
-    enum: ['featured', 'new_arrivals', 'back_in_stock', 'trending', 'best_sellers'],
+    enum: ['featured', 'new_arrivals', 'back_in_stock', 'best_sellers'], // Removed 'trending' - not in frontend
     required: true,
     unique: true
   },

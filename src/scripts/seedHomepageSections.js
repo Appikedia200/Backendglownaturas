@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 const HomepageSection = require('../infrastructure/database/mongodb/models/HomepageSection');
 const logger = require('../config/logger');
 
+// MATCHES FRONTEND EXACTLY (src/app/page.tsx)
 const defaultSections = [
   {
     sectionType: 'featured',
@@ -23,33 +24,23 @@ const defaultSections = [
     maxProducts: 8
   },
   {
-    sectionType: 'new_arrivals',
-    title: 'New Arrivals',
-    subtitle: 'Latest additions to our collection',
-    products: [],
-    displayOrder: 2,
-    isActive: true,
-    autoUpdate: true, // Can auto-populate with recently added products
-    maxProducts: 8
-  },
-  {
     sectionType: 'back_in_stock',
     title: 'Back in Stock',
     subtitle: 'Popular items now available again',
     products: [],
-    displayOrder: 3,
+    displayOrder: 2,
     isActive: true,
     autoUpdate: false,
     maxProducts: 8
   },
   {
-    sectionType: 'trending',
-    title: 'Trending Now',
-    subtitle: 'What everyone is buying',
+    sectionType: 'new_arrivals',
+    title: 'New Arrivals',
+    subtitle: 'Latest additions to our collection',
     products: [],
-    displayOrder: 4,
+    displayOrder: 3,
     isActive: true,
-    autoUpdate: true, // Can auto-populate with most viewed products
+    autoUpdate: true, // Can auto-populate with recently added products
     maxProducts: 8
   },
   {
@@ -57,11 +48,12 @@ const defaultSections = [
     title: 'Best Sellers',
     subtitle: 'Our most popular products',
     products: [],
-    displayOrder: 5,
+    displayOrder: 4,
     isActive: true,
     autoUpdate: true, // Can auto-populate with top-selling products
     maxProducts: 8
   }
+  // NOTE: "Trending" removed - not in frontend
 ];
 
 async function seedHomepageSections() {
