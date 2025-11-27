@@ -52,8 +52,24 @@ class MongoProductRepository extends IProductRepository {
       ];
     }
     
+    // Support category by ObjectId OR slug
     if (category) {
-      query.category = category;
+      const mongoose = require('mongoose');
+      const Category = mongoose.model('Category');
+      
+      // Check if it's a valid ObjectId
+      if (mongoose.Types.ObjectId.isValid(category) && /^[0-9a-fA-F]{24}$/.test(category)) {
+        query.category = category;
+      } else {
+        // Treat as slug - lookup category
+        const cat = await Category.findOne({ slug: category });
+        if (cat) {
+          query.category = cat._id;
+        } else {
+          // Category slug not found - return empty results
+          query.category = new mongoose.Types.ObjectId(); // Non-existent ID
+        }
+      }
     }
     
     // NEW: Support multiple brands (comma-separated)
