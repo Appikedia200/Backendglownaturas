@@ -252,3 +252,4 @@ Status: Waiting for brand sync fix
 **I'm continuing to fix the brand sync issue now. Frontend can proceed with category pages!** 🚀
 
 
+
