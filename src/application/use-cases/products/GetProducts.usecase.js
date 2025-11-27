@@ -27,6 +27,7 @@ class GetProductsUseCase {
       limit,
       search: query.search,
       category: query.category,
+      brand: query.brand, // Support multiple brands (comma-separated)
       status: query.status,
       featured: query.featured,
       sortBy: query.sortBy || 'createdAt',

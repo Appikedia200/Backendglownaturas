@@ -32,6 +32,7 @@ const cartRoutes = require('./presentation/http/routes/cart.routes');
 const emailTemplatesRoutes = require('./presentation/http/routes/email-templates.routes');
 const homepageSectionsRoutes = require('./presentation/http/routes/homepage-sections.routes');
 const analyticsRoutes = require('./presentation/http/routes/analytics.routes');
+const brandRoutes = require('./presentation/http/routes/brand.routes');
 
 // Logger
 const logger = require('./config/logger');
@@ -151,6 +152,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
 app.use('/api/homepage-sections', homepageSectionsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/brands', brandRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -265,5 +265,43 @@ productSchema.index({ featured: 1 });
 productSchema.index({ status: 1, featured: -1 }); // For featured products query
 productSchema.index({ category: 1, status: 1, featured: -1 }); // Category + featured
 
+// Auto-create/update brand when product is saved
+productSchema.post('save', async function(doc) {
+  try {
+    // Only process if product has a brand and is active
+    if (!doc.brand || !doc.brand.trim()) return;
+
+    const Brand = require('./Brand');
+    
+    // Find brand (case-insensitive)
+    let brand = await Brand.findOne({
+      name: { $regex: new RegExp(`^${doc.brand}$`, 'i') }
+    });
+
+    if (!brand) {
+      // Create new brand
+      brand = await Brand.create({
+        name: doc.brand,
+        createdFrom: doc._id,
+        productCount: 1
+      });
+      console.log(`✅ Auto-created brand: ${brand.name}`);
+    } else {
+      // Update product count for existing brand
+      const Product = require('./Product');
+      const count = await Product.countDocuments({
+        brand: { $regex: new RegExp(`^${doc.brand}$`, 'i') },
+        status: 'active'
+      });
+      
+      brand.productCount = count;
+      await brand.save();
+    }
+  } catch (error) {
+    // Log error but don't fail product save
+    console.error('Brand auto-creation error:', error.message);
+  }
+});
+
 module.exports = mongoose.model('Product', productSchema);
 

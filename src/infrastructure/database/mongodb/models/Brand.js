@@ -1,0 +1,94 @@
+/**
+ * Brand Model
+ * Auto-extracted from products, A-Z organized
+ * @version 5.2.1
+ */
+
+const mongoose = require('mongoose');
+
+const brandSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true
+  },
+  logo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Media'
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  website: {
+    type: String,
+    default: ''
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  displayOrder: {
+    type: Number,
+    default: 0
+  },
+  firstLetter: {
+    type: String,
+    uppercase: true,
+    index: true
+  },
+  productCount: {
+    type: Number,
+    default: 0
+  },
+  createdFrom: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    comment: 'First product that created this brand'
+  },
+  seo: {
+    metaTitle: String,
+    metaDescription: String,
+    keywords: [String]
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Auto-generate slug and firstLetter before save
+brandSchema.pre('save', function(next) {
+  if (this.isModified('name')) {
+    // Generate slug from name
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+    
+    // Extract first letter for A-Z grouping
+    this.firstLetter = this.name.charAt(0).toUpperCase();
+    
+    // If first letter is not A-Z, use '#' for numbers/special chars
+    if (!/[A-Z]/.test(this.firstLetter)) {
+      this.firstLetter = '#';
+    }
+  }
+  next();
+});
+
+// Indexes for performance
+brandSchema.index({ firstLetter: 1, name: 1 });
+brandSchema.index({ slug: 1 });
+brandSchema.index({ isActive: 1 });
+brandSchema.index({ productCount: -1 });
+
+module.exports = mongoose.model('Brand', brandSchema);
+

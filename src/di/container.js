@@ -16,6 +16,7 @@ const MongoMediaRepository = require('../infrastructure/database/mongodb/reposit
 const MongoSettingsRepository = require('../infrastructure/database/mongodb/repositories/MongoSettingsRepository');
 const MongoEmailTemplateRepository = require('../infrastructure/database/mongodb/repositories/MongoEmailTemplateRepository');
 const MongoHomepageSectionRepository = require('../infrastructure/database/mongodb/repositories/MongoHomepageSectionRepository');
+const MongoBrandRepository = require('../infrastructure/database/mongodb/repositories/MongoBrandRepository');
 
 // Services
 const BrevoEmailService = require('../infrastructure/services/BrevoEmailService');
@@ -54,6 +55,7 @@ const ManageSettingsUseCase = require('../application/use-cases/settings/ManageS
 const GetStatisticsUseCase = require('../application/use-cases/dashboard/GetStatistics.usecase');
 const ManageEmailTemplatesUseCase = require('../application/use-cases/email-templates/ManageEmailTemplates.usecase');
 const ManageHomepageSectionsUseCase = require('../application/use-cases/homepage-sections/ManageHomepageSections.usecase');
+const ManageBrandsUseCase = require('../application/use-cases/brands/ManageBrands.usecase');
 
 // Analytics Use Cases
 const GetAnalyticsSummaryUseCase = require('../application/use-cases/analytics/GetAnalyticsSummary.usecase');
@@ -75,6 +77,7 @@ const DashboardController = require('../presentation/http/controllers/DashboardC
 const EmailTemplateController = require('../presentation/http/controllers/EmailTemplateController');
 const HomepageSectionController = require('../presentation/http/controllers/HomepageSectionController');
 const AnalyticsController = require('../presentation/http/controllers/AnalyticsController');
+const BrandController = require('../presentation/http/controllers/BrandController');
 
 class Container {
   constructor() {
@@ -323,6 +326,13 @@ class Container {
     return this.instances.homepageSectionRepository;
   }
 
+  getBrandRepository() {
+    if (!this.instances.brandRepository) {
+      this.instances.brandRepository = new MongoBrandRepository();
+    }
+    return this.instances.brandRepository;
+  }
+
   // ========== AUTH USE CASES ==========
   getLoginUseCase() {
     if (!this.instances.loginUseCase) {
@@ -449,6 +459,15 @@ class Container {
       );
     }
     return this.instances.manageHomepageSectionsUseCase;
+  }
+
+  getManageBrandsUseCase() {
+    if (!this.instances.manageBrandsUseCase) {
+      this.instances.manageBrandsUseCase = new ManageBrandsUseCase(
+        this.getBrandRepository()
+      );
+    }
+    return this.instances.manageBrandsUseCase;
   }
 
   // ========== NEW CONTROLLERS ==========
@@ -589,6 +608,15 @@ class Container {
       );
     }
     return this.instances.analyticsController;
+  }
+
+  getBrandController() {
+    if (!this.instances.brandController) {
+      this.instances.brandController = new BrandController(
+        this.getManageBrandsUseCase()
+      );
+    }
+    return this.instances.brandController;
   }
 }
 

@@ -26,6 +26,7 @@ class MongoProductRepository extends IProductRepository {
       limit = 20,
       search,
       category,
+      brand, // NEW: Support multiple brands
       status,
       featured,
       sortBy = 'createdAt',
@@ -53,6 +54,14 @@ class MongoProductRepository extends IProductRepository {
     
     if (category) {
       query.category = category;
+    }
+    
+    // NEW: Support multiple brands (comma-separated)
+    if (brand) {
+      const brands = brand.split(',').map(b => b.trim());
+      query.brand = { 
+        $in: brands.map(b => new RegExp(`^${b}$`, 'i')) 
+      };
     }
     
     if (status) {
