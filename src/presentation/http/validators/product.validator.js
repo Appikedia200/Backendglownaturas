@@ -190,7 +190,7 @@ const validateGetProducts = [
   
   query('category')
     .optional()
-    .isMongoId().withMessage('Invalid category ID'),
+    .trim(),  // Accept both ObjectId and slug
   
   query('status')
     .optional()

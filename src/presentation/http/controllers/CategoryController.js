@@ -16,7 +16,8 @@ class CategoryController {
   async getAll(req, res, next) {
     try {
       const categories = await this.manageCategoriesUseCase.getAll();
-      res.json(Response.success(categories));
+      // Return in expected format: { categories: [...] }
+      res.json(Response.success({ categories }));
     } catch (error) {
       next(error);
     }
