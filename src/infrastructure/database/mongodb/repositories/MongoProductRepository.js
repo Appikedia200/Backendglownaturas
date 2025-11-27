@@ -122,8 +122,7 @@ class MongoProductRepository extends IProductRepository {
         .populate('category')
         .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
         .limit(limit)
-        .skip((page - 1) * limit)
-        .lean(),
+        .skip((page - 1) * limit),
       Product.countDocuments(query),
     ]);
 
