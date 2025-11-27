@@ -30,8 +30,8 @@ const validateCreateCategory = [
     .isLength({ min: 2, max: 100 }).withMessage('Category name must be 2-100 characters'),
   
   body('slug')
+    .optional() // ✅ Slug is now optional - auto-generated from name if not provided
     .trim()
-    .notEmpty().withMessage('Slug is required')
     .isLength({ min: 2, max: 100 }).withMessage('Slug must be 2-100 characters')
     .matches(/^[a-z0-9-]+$/).withMessage('Slug can only contain lowercase letters, numbers, and hyphens'),
   
@@ -42,7 +42,15 @@ const validateCreateCategory = [
   
   body('image')
     .optional()
-    .isURL().withMessage('Image must be a valid URL'),
+    .isMongoId().withMessage('Image must be a valid Media ID'), // ✅ Fixed: Should be MongoId, not URL
+  
+  body('displayOrder')
+    .optional()
+    .isInt({ min: 0 }).withMessage('Display order must be a positive integer'),
+  
+  body('isActive')
+    .optional()
+    .isBoolean().withMessage('isActive must be a boolean'),
   
   validate
 ];
@@ -69,6 +77,18 @@ const validateUpdateCategory = [
     .optional()
     .trim()
     .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters'),
+  
+  body('image')
+    .optional()
+    .isMongoId().withMessage('Image must be a valid Media ID'),
+  
+  body('displayOrder')
+    .optional()
+    .isInt({ min: 0 }).withMessage('Display order must be a positive integer'),
+  
+  body('isActive')
+    .optional()
+    .isBoolean().withMessage('isActive must be a boolean'),
   
   validate
 ];
