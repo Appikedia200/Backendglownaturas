@@ -61,7 +61,9 @@ const settingsSchema = new mongoose.Schema({
   socialMedia: {
     facebook: String,
     instagram: String,
-    twitter: String
+    twitter: String,
+    youtube: String,
+    tiktok: String
   }
 }, {
   timestamps: true

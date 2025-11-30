@@ -28,6 +28,41 @@ class SettingsController {
   }
 
   /**
+   * Get public settings (no auth required)
+   * GET /api/settings/public
+   */
+  async getPublicSettings(req, res, next) {
+    try {
+      const settings = await this.manageSettingsUseCase.getSettings();
+      
+      // Only return public data (no sensitive admin info)
+      const publicSettings = {
+        storeInfo: {
+          name: settings.storeInfo?.name,
+          phone: settings.storeInfo?.phone,
+        },
+        whatsapp: {
+          number: settings.whatsapp?.number,
+          showFloatButton: settings.whatsapp?.showFloatButton,
+          floatPosition: settings.whatsapp?.floatPosition,
+          welcomeMessage: settings.whatsapp?.welcomeMessage,
+        },
+        socialMedia: {
+          facebook: settings.socialMedia?.facebook,
+          instagram: settings.socialMedia?.instagram,
+          twitter: settings.socialMedia?.twitter,
+          youtube: settings.socialMedia?.youtube,
+          tiktok: settings.socialMedia?.tiktok,
+        }
+      };
+      
+      res.json(Response.success(publicSettings));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update settings
    * PUT /api/settings
    */

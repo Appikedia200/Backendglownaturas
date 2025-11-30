@@ -65,7 +65,9 @@ const seedData = async () => {
       socialMedia: {
         facebook: 'https://facebook.com/glownaturas',
         instagram: 'https://instagram.com/glownaturas',
-        twitter: 'https://twitter.com/glownaturas'
+        twitter: 'https://twitter.com/glownaturas',
+        youtube: 'https://youtube.com/@glownatura',
+        tiktok: 'https://tiktok.com/@glownatura'
       }
     });
     console.log('Settings created successfully');
