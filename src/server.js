@@ -6,13 +6,19 @@
 
 require('dotenv').config();
 
-// Create logs directory if it doesn't exist (CRITICAL for Render deployment)
+// Create logs and receipts directories if they don't exist (CRITICAL for Render deployment)
 const fs = require('fs');
 const path = require('path');
 const logsDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
   console.log('✅ Logs directory created');
+}
+
+const receiptsDir = path.join(__dirname, '../receipts');
+if (!fs.existsSync(receiptsDir)) {
+  fs.mkdirSync(receiptsDir, { recursive: true });
+  console.log('✅ Receipts directory created');
 }
 
 const mongoose = require('mongoose');

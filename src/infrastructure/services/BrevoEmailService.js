@@ -2,6 +2,8 @@ const IEmailService = require('../../domain/services/IEmailService');
 const brevo = require('@getbrevo/brevo');
 const Config = require('../config');
 const logger = require('../../config/logger');
+const fs = require('fs');
+const { generatePDFReceipt } = require('../../utils/pdfGenerator');
 
 /**
  * Brevo Email Service Implementation (Adapter)
@@ -25,7 +27,7 @@ class BrevoEmailService extends IEmailService {
     this.from = emailConfig.from;
   }
 
-  async send(to, subject, html) {
+  async send(to, subject, html, attachments = []) {
     try {
       const sendSmtpEmail = new brevo.SendSmtpEmail();
       
@@ -41,12 +43,18 @@ class BrevoEmailService extends IEmailService {
       sendSmtpEmail.subject = subject;
       sendSmtpEmail.htmlContent = html;
       
+      // Add attachments if provided
+      if (attachments && attachments.length > 0) {
+        sendSmtpEmail.attachment = attachments;
+      }
+      
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       
       logger.info('Email sent successfully', {
         to,
         subject,
-        messageId: response.messageId
+        messageId: response.messageId,
+        attachments: attachments.length
       });
     } catch (error) {
       logger.error('Email send failed', {
@@ -59,9 +67,43 @@ class BrevoEmailService extends IEmailService {
   }
 
   async sendOrderConfirmation(order) {
-    const subject = `Order Confirmation - ${order.orderId}`;
-    const html = this.buildOrderConfirmationTemplate(order);
-    await this.send(order.customer.email, subject, html);
+    try {
+      const subject = `Order Confirmation - ${order.orderId}`;
+      const html = this.buildOrderConfirmationTemplate(order);
+      
+      // Generate PDF invoice
+      const pdfPath = await generatePDFReceipt(order);
+      
+      // Read PDF file and convert to base64
+      const pdfContent = fs.readFileSync(pdfPath);
+      const pdfBase64 = pdfContent.toString('base64');
+      
+      // Prepare attachment for Brevo
+      const attachments = [{
+        content: pdfBase64,
+        name: `Invoice-${order.orderId}.pdf`
+      }];
+      
+      // Send email with PDF attachment
+      await this.send(order.customer.email, subject, html, attachments);
+      
+      // Clean up: delete PDF file after sending
+      fs.unlinkSync(pdfPath);
+      
+      logger.info('Order confirmation email sent with PDF attachment', {
+        orderId: order.orderId,
+        email: order.customer.email
+      });
+    } catch (error) {
+      logger.error('Failed to send order confirmation with PDF', {
+        orderId: order.orderId,
+        error: error.message
+      });
+      // Fallback: send email without PDF if something fails
+      const subject = `Order Confirmation - ${order.orderId}`;
+      const html = this.buildOrderConfirmationTemplate(order);
+      await this.send(order.customer.email, subject, html);
+    }
   }
 
   async sendOrderStatusUpdate(order, status) {

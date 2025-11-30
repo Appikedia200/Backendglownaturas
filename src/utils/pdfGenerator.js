@@ -74,8 +74,8 @@ exports.generatePDFReceipt = async (order) => {
         doc
           .text(item.productName, 50, position, { width: 280, ellipsis: true })
           .text(item.quantity.toString(), 350, position)
-          .text(`N${item.price.toLocaleString()}`, 400, position)
-          .text(`N${item.subtotal.toLocaleString()}`, 480, position);
+          .text(`₦${item.price.toLocaleString()}`, 400, position)
+          .text(`₦${item.subtotal.toLocaleString()}`, 480, position);
         
         position += 30;
       });
@@ -90,15 +90,15 @@ exports.generatePDFReceipt = async (order) => {
       doc
         .font('Helvetica')
         .text('Subtotal:', 350, totalsTop + 10)
-        .text(`N${order.subtotal.toLocaleString()}`, 480, totalsTop + 10)
+        .text(`₦${order.subtotal.toLocaleString()}`, 480, totalsTop + 10)
         .text('Shipping:', 350, totalsTop + 30)
-        .text(`N${order.shippingFee.toLocaleString()}`, 480, totalsTop + 30);
+        .text(`₦${order.shippingFee.toLocaleString()}`, 480, totalsTop + 30);
       
       doc
         .font('Helvetica-Bold')
         .fontSize(12)
         .text('TOTAL:', 350, totalsTop + 50)
-        .text(`N${order.total.toLocaleString()}`, 480, totalsTop + 50);
+        .text(`₦${order.total.toLocaleString()}`, 480, totalsTop + 50);
       
       doc
         .fontSize(10)
