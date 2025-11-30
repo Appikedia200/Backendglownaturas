@@ -23,13 +23,8 @@ const createLimiter = (options) => {
     skip: (req) => {
       // Skip rate limiting for health checks
       return req.path === '/health' || req.path === '/api/health';
-    },
-    keyGenerator: (req) => {
-      // Use IP + user ID if authenticated
-      const userId = req.user?.id || 'anonymous';
-      const ip = req.ip || req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
-      return `${ip}-${userId}`;
     }
+    // Remove custom keyGenerator to use default IPv6-safe implementation
   });
 };
 
