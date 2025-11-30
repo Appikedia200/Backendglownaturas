@@ -23,8 +23,9 @@ const createLimiter = (options) => {
     skip: (req) => {
       // Skip rate limiting for health checks
       return req.path === '/health' || req.path === '/api/health';
-    }
-    // Remove custom keyGenerator to use default IPv6-safe implementation
+    },
+    // Use standard IP-based key generation (IPv6-safe)
+    validate: { trustProxy: false }
   });
 };
 
