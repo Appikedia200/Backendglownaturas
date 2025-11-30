@@ -6,51 +6,6 @@
     "auditLog": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\.db44e0c24187da0ce7efb447825de93b2edddd49-audit.json",
     "files": [
         {
-            "date": 1763083146309,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-13.log",
-            "hash": "177c5847f8d30fc6a8bfc271be83e6aaa0777c907b88f10c1d002d3d1e4e4163"
-        },
-        {
-            "date": 1763111987355,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-14.log",
-            "hash": "9058b602ae5e2f417cb45aa5185bb09b9a7b17866ab17175caf1eb46fd7888ed"
-        },
-        {
-            "date": 1763195078091,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-15.log",
-            "hash": "fe3d0b98a99a3c55f3cf79ea07e3ce419bd6167191509d326ee44598dba52c0e"
-        },
-        {
-            "date": 1763231682392,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-15.log.1",
-            "hash": "69233c4f6a12b243b4b7284b0ff09f464c0eafaa68fd7f958953418ce0dd9c44"
-        },
-        {
-            "date": 1763231689708,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-15.log.2",
-            "hash": "322e5fca504dd83f11bc95e679e6ec0105b3d485a727ed33435d11ed9b4b8545"
-        },
-        {
-            "date": 1763231696840,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-15.log.3",
-            "hash": "44b90e5093a4d5546f72a8104f8ebf394c6dcfb01aa78b5ab801dab923f440d0"
-        },
-        {
-            "date": 1763231702258,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-15.log.4",
-            "hash": "036000e53d4de2b92f3d64d8e08f8b58c7adafc7f181119df65926751c03d7ec"
-        },
-        {
-            "date": 1763231708808,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-15.log.5",
-            "hash": "120dafdf4427f6491a242b6bb50f9119c5b72d81517bbe3edcf28a8eb4f6dc85"
-        },
-        {
-            "date": 1763231718013,
-            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-15.log.6",
-            "hash": "1d6e93704e561886c4d02ac4d0a9c06ffd7187de072b1cae91810e027d524486"
-        },
-        {
             "date": 1763406788508,
             "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-17.log",
             "hash": "c8c18599d071117d0d76dd87f3c305b46921406c43b1954448d9aff2934521e5"
@@ -74,6 +29,11 @@
             "date": 1764090162110,
             "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-25.log",
             "hash": "3dcdc82d835b19b3d1125c838b8236696cb5571b768d6a4b31dee096ad375f0c"
+        },
+        {
+            "date": 1764521987060,
+            "name": "C:\\Users\\happy\\OneDrive\\Desktop\\Backend Championsupermarket\\logs\\error-2025-11-30.log",
+            "hash": "1d03f5a3fe4b93e75c64ccbe776112257b973cedcff63914d18e980f5f357cdd"
         }
     ],
     "hashType": "sha256"

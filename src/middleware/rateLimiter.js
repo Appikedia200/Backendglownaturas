@@ -74,12 +74,13 @@ const limiters = {
   })
 };
 
-// Export both old format (for backwards compatibility) and new format
+// Export limiters object as default
 module.exports = limiters;
 
-// Also export individual limiters for backwards compatibility
-exports.generalLimiter = limiters.general;
-exports.authLimiter = limiters.auth;
-exports.orderLimiter = limiters.orders;
-exports.reviewLimiter = limiters.publicRead;
+// IMPORTANT: Also export individual limiters for backwards compatibility
+// Must do this AFTER module.exports to work correctly
+module.exports.generalLimiter = limiters.general;
+module.exports.authLimiter = limiters.auth;
+module.exports.orderLimiter = limiters.orders;
+module.exports.reviewLimiter = limiters.publicRead;
 
