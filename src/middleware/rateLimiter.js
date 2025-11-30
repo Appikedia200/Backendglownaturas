@@ -1,96 +1,89 @@
 const rateLimit = require('express-rate-limit');
 const logger = require('../config/logger');
 
-// General API rate limiter (500 requests per 15 minutes - increased for admin panel)
-exports.generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Increased from 100 to 500
-  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
-  legacyHeaders: false, // Disable `X-RateLimit-*` headers
-  handler: (req, res) => {
-    logger.warn('Rate limit exceeded - General', {
-      ip: req.ip,
-      path: req.path,
-      userAgent: req.get('user-agent'),
-      limiterType: 'general'
-    });
-    
-    res.status(429).json({
+// Helper to create rate limiters
+const createLimiter = (options) => {
+  return rateLimit({
+    windowMs: options.windowMs || 15 * 60 * 1000,
+    max: options.max || 100,
+    message: {
       success: false,
-      error: 'Too many requests from this IP, please try again later.',
-      errorCode: 'RATE_LIMIT_EXCEEDED',
-      retryAfter: Math.ceil(15 * 60) // seconds
-    });
-  }
-});
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: options.message || 'Too many requests. Please try again later.',
+        retryAfter: Math.ceil((options.windowMs || 900000) / 1000 / 60) + ' minutes'
+      }
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res, next, options) => {
+      logger.warn(`Rate limit exceeded for IP: ${req.ip}, Path: ${req.path}`);
+      res.status(429).json(options.message);
+    },
+    skip: (req) => {
+      // Skip rate limiting for health checks
+      return req.path === '/health' || req.path === '/api/health';
+    },
+    keyGenerator: (req) => {
+      // Use IP + user ID if authenticated
+      const userId = req.user?.id || 'anonymous';
+      const ip = req.ip || req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
+      return `${ip}-${userId}`;
+    }
+  });
+};
 
-// Authentication rate limiter (5 requests per 15 minutes)
-exports.authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  skipSuccessfulRequests: true, // Don't count successful auth attempts
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.warn('Rate limit exceeded - Authentication', {
-      ip: req.ip,
-      path: req.path,
-      userAgent: req.get('user-agent'),
-      limiterType: 'auth'
-    });
-    
-    res.status(429).json({
-      success: false,
-      error: 'Too many authentication attempts, please try again later.',
-      errorCode: 'AUTH_RATE_LIMIT_EXCEEDED',
-      retryAfter: Math.ceil(15 * 60) // seconds
-    });
-  }
-});
+// Different limiters for different use cases
+const limiters = {
+  // General API - generous limit
+  general: createLimiter({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500,
+    message: 'Too many requests. Please slow down and try again in a few minutes.'
+  }),
 
-// Order creation rate limiter (10 requests per hour)
-exports.orderLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.warn('Rate limit exceeded - Order Creation', {
-      ip: req.ip,
-      path: req.path,
-      userAgent: req.get('user-agent'),
-      limiterType: 'order'
-    });
-    
-    res.status(429).json({
-      success: false,
-      error: 'Too many orders from this IP, please try again later.',
-      errorCode: 'ORDER_RATE_LIMIT_EXCEEDED',
-      retryAfter: Math.ceil(60 * 60) // seconds
-    });
-  }
-});
+  // Auth endpoints - stricter to prevent brute force
+  auth: createLimiter({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    message: 'Too many login attempts. Please wait 15 minutes before trying again.'
+  }),
 
-// Review submission rate limiter (5 requests per hour)
-exports.reviewLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.warn('Rate limit exceeded - Review Submission', {
-      ip: req.ip,
-      path: req.path,
-      userAgent: req.get('user-agent'),
-      limiterType: 'review'
-    });
-    
-    res.status(429).json({
-      success: false,
-      error: 'Too many reviews submitted, please try again later.',
-      errorCode: 'REVIEW_RATE_LIMIT_EXCEEDED',
-      retryAfter: Math.ceil(60 * 60) // seconds
-    });
-  }
-});
+  // Admin operations - moderate limit (increased for heavy admin usage)
+  admin: createLimiter({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 120, // 120 requests per minute (2 per second)
+    message: 'Admin rate limit reached. Please wait a moment before continuing.'
+  }),
+
+  // Public read operations - very generous
+  publicRead: createLimiter({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 300,
+    message: 'Request limit reached. Please try again shortly.'
+  }),
+
+  // Order creation - prevent spam
+  orders: createLimiter({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 20,
+    message: 'Order limit reached. You can only place 20 orders per hour.'
+  }),
+
+  // Media uploads - prevent abuse
+  uploads: createLimiter({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 100,
+    message: 'Upload limit reached. Please wait before uploading more files.'
+  })
+};
+
+// Export both old format (for backwards compatibility) and new format
+module.exports = limiters;
+
+// Also export individual limiters for backwards compatibility
+exports.generalLimiter = limiters.general;
+exports.authLimiter = limiters.auth;
+exports.orderLimiter = limiters.orders;
+exports.reviewLimiter = limiters.publicRead;
 

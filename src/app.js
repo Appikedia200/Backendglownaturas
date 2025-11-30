@@ -42,8 +42,12 @@ const logger = require('./config/logger');
 
 const app = express();
 
+// Trust proxy (important for Render and rate limiting)
+app.set('trust proxy', 1);
+
 // CORS - MUST be before Helmet!
 app.use(corsMiddleware);
+app.options('*', corsMiddleware); // Handle preflight requests
 
 // Enhanced Helmet configuration for production security
 app.use(helmet({
