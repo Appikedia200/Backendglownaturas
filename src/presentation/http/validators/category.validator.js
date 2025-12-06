@@ -52,6 +52,17 @@ const validateCreateCategory = [
     .optional()
     .isBoolean().withMessage('isActive must be a boolean'),
   
+  body('parentCategory')
+    .optional()
+    .custom((value) => {
+      if (value === null || value === '') return true; // Allow null/empty for root categories
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(value)) {
+        throw new Error('Parent category must be a valid category ID');
+      }
+      return true;
+    }),
+  
   validate
 ];
 
@@ -89,6 +100,17 @@ const validateUpdateCategory = [
   body('isActive')
     .optional()
     .isBoolean().withMessage('isActive must be a boolean'),
+  
+  body('parentCategory')
+    .optional()
+    .custom((value) => {
+      if (value === null || value === '') return true; // Allow null/empty for root categories
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(value)) {
+        throw new Error('Parent category must be a valid category ID');
+      }
+      return true;
+    }),
   
   validate
 ];
