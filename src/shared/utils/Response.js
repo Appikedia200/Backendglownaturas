@@ -21,6 +21,7 @@ class Response {
   }
 
   static paginated(data, pagination) {
+    const totalPages = Math.ceil(pagination.total / pagination.limit);
     return {
       success: true,
       data,
@@ -28,9 +29,9 @@ class Response {
         page: pagination.page,
         limit: pagination.limit,
         total: pagination.total,
-        pages: Math.ceil(pagination.total / pagination.limit),
-        hasNext: pagination.page < Math.ceil(pagination.total / pagination.limit),
-        hasPrev: pagination.page > 1,
+        totalPages, // Frontend expects "totalPages"
+        hasNextPage: pagination.page < totalPages, // Changed to match frontend
+        hasPrevPage: pagination.page > 1, // Changed to match frontend
       }
     };
   }
