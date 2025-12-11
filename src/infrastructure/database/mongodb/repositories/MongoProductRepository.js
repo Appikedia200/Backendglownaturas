@@ -9,7 +9,9 @@ const { NotFoundError } = require('../../../../shared/errors/AppError');
  */
 class MongoProductRepository extends IProductRepository {
   async findById(id) {
-    const product = await Product.findById(id).populate('category');
+    const product = await Product.findById(id)
+      .populate('category')
+      .populate('images.mediaId'); // ✅ Populate images for product detail page
     if (!product) {
       throw new NotFoundError('Product');
     }
@@ -138,6 +140,7 @@ class MongoProductRepository extends IProductRepository {
     const [products, total] = await Promise.all([
       Product.find(query)
         .populate('category')
+        .populate('images.mediaId') // ✅ Populate images for product listings
         .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
         .limit(limit)
         .skip((page - 1) * limit),
@@ -149,7 +152,7 @@ class MongoProductRepository extends IProductRepository {
 
   async create(productData) {
     const product = await Product.create(productData);
-    return await product.populate('category');
+    return await product.populate(['category', 'images.mediaId']);
   }
 
   async update(id, updates) {
@@ -157,7 +160,9 @@ class MongoProductRepository extends IProductRepository {
       id,
       updates,
       { new: true, runValidators: true }
-    ).populate('category');
+    )
+      .populate('category')
+      .populate('images.mediaId');
     
     if (!product) {
       throw new NotFoundError('Product');
@@ -187,6 +192,7 @@ class MongoProductRepository extends IProductRepository {
       status: 'published',
     })
       .populate('category')
+      .populate('images.mediaId')
       .lean();
   }
 
@@ -195,7 +201,9 @@ class MongoProductRepository extends IProductRepository {
       id,
       { $inc: { stock: quantity } },
       { new: true, runValidators: true }
-    ).populate('category');
+    )
+      .populate('category')
+      .populate('images.mediaId');
     
     if (!product) {
       throw new NotFoundError('Product');

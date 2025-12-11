@@ -31,45 +31,45 @@ const createLimiter = (options) => {
 
 // Different limiters for different use cases
 const limiters = {
-  // General API - generous limit
+  // General API - VERY GENEROUS (professional e-commerce site needs this!)
   general: createLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500,
+    max: 5000, // ✅ 5000 requests per 15 minutes (professional standard)
     message: 'Too many requests. Please slow down and try again in a few minutes.'
   }),
 
   // Auth endpoints - stricter to prevent brute force
   auth: createLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20,
+    max: 50, // ✅ Increased from 20 to 50 (reasonable for legitimate users)
     message: 'Too many login attempts. Please wait 15 minutes before trying again.'
   }),
 
-  // Admin operations - moderate limit (increased for heavy admin usage)
+  // Admin operations - VERY GENEROUS (admin needs to work fast!)
   admin: createLimiter({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 120, // 120 requests per minute (2 per second)
+    max: 500, // ✅ 500 requests per minute (admin panel makes many API calls)
     message: 'Admin rate limit reached. Please wait a moment before continuing.'
   }),
 
-  // Public read operations - very generous
+  // Public read operations - EXTREMELY GENEROUS (this is what frontend uses!)
   publicRead: createLimiter({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 300,
+    max: 2000, // ✅ 2000 requests per minute (homepage loads many resources)
     message: 'Request limit reached. Please try again shortly.'
   }),
 
   // Order creation - prevent spam
   orders: createLimiter({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 20,
-    message: 'Order limit reached. You can only place 20 orders per hour.'
+    max: 50, // ✅ Increased from 20 to 50 (legitimate customers may retry)
+    message: 'Order limit reached. You can only place 50 orders per hour.'
   }),
 
   // Media uploads - prevent abuse
   uploads: createLimiter({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 100,
+    max: 200, // ✅ Increased from 100 to 200 (admin may upload many images)
     message: 'Upload limit reached. Please wait before uploading more files.'
   })
 };
